@@ -123,6 +123,10 @@
   <aside class="left">
     <div class="tag">Running locally</div>
     <h1>Jarvis</h1>
+    <h2>Disaster</h2>
+    <select id="disaster">
+      <option value="fire">Wildfire</option>
+    </select>
     <h2>Basemap</h2>
     <label><input type="radio" name="basemap" value="satellite" checked> Satellite</label>
     <label><input type="radio" name="basemap" value="streets"> Streets</label>
@@ -131,8 +135,15 @@
   <div id="map"></div>
 
   <aside class="right">
-    <h2>Layers</h2>
-    <p>No data layers yet.</p>
+    <h2>Situation</h2>
+    <label><input type="checkbox" data-layer="perimeters" checked> Fire perimeters <span class="status" data-status="perimeters"></span></label>
+    <label><input type="checkbox" data-layer="hotspots" checked> Heat detections <span class="status" data-status="hotspots"></span></label>
+    <label><input type="checkbox" data-layer="warnings" checked> Red flag warnings <span class="status" data-status="warnings"></span></label>
+    <h2>Resources</h2>
+    <label><input type="checkbox" data-layer="stations"> Fire stations <span class="status" data-status="stations"></span></label>
+    <label><input type="checkbox" data-layer="water"> Water sources <span class="status" data-status="water"></span></label>
+    <h2>Risk</h2>
+    <label><input type="checkbox" data-layer="hazard"> Wildfire hazard <span class="status" data-status="hazard"></span></label>
     <h2>Details</h2>
     <div id="details"><p>Click something on the map.</p></div>
   </aside>

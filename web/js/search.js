@@ -1,5 +1,6 @@
 import { map } from "./map.js";
 import { fetchJson } from "./util.js";
+import { findFireByName } from "./disasters/fire/perimeters.js";
 
 const form = document.getElementById("search");
 const input = document.getElementById("search-input");
@@ -30,5 +31,13 @@ form.addEventListener("submit", (event) => {
   event.preventDefault();
   const query = input.value.trim();
   if (!query) return;
+
+  const fire = findFireByName(query);
+  if (fire) {
+    map.fitBounds(fire.getBounds());
+    fire.fire("click");
+    status.textContent = "";
+    return;
+  }
   goToPlace(query);
 });
