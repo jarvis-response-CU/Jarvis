@@ -4,10 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jarvis</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+      crossorigin="anonymous">
 <style>
   :root {
     color-scheme: light dark;
     --bg: #fbfbfa;
+    --panel: #f3f3f1;
     --fg: #16181d;
     --muted: #6b7280;
     --rule: #e3e3e0;
@@ -16,6 +20,7 @@
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #101215;
+      --panel: #16191e;
       --fg: #eceef2;
       --muted: #8b929e;
       --rule: #24272e;
@@ -25,43 +30,126 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    min-height: 100vh;
+    height: 100vh;
     display: grid;
-    place-items: center;
-    padding: 2rem;
+    grid-template-columns: 220px 1fr 260px;
     background: var(--bg);
     color: var(--fg);
-    font: 16px/1.6 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
   }
-  main { max-width: 34rem; }
+  aside {
+    background: var(--panel);
+    padding: 1rem;
+    overflow-y: auto;
+  }
+  aside.left { border-right: 1px solid var(--rule); }
+  aside.right { border-left: 1px solid var(--rule); }
+  h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    letter-spacing: -.02em;
+  }
   .tag {
-    font-size: .75rem;
+    font-size: .6875rem;
     letter-spacing: .12em;
     text-transform: uppercase;
     color: var(--accent);
   }
-  h1 {
-    margin: .4rem 0 0;
-    font-size: clamp(2.5rem, 8vw, 3.75rem);
-    letter-spacing: -.03em;
-    font-weight: 600;
+  h2 {
+    font-size: .6875rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 1.5rem 0 .5rem;
   }
-  p { color: var(--muted); max-width: 30rem; }
-  hr { border: 0; border-top: 1px solid var(--rule); margin: 1.75rem 0; }
-  code {
+  label { display: block; padding: .25rem 0; cursor: pointer; }
+  p { color: var(--muted); margin: .5rem 0; }
+  #map { height: 100vh; }
+  #readout {
+    position: absolute;
+    right: 276px;
+    bottom: 16px;
+    z-index: 1000;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: .625rem .75rem;
+    max-width: 22rem;
+    box-shadow: 0 1px 6px rgb(0 0 0 / .2);
+  }
+  #coords {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: .8125rem;
+  }
+  #address { color: var(--muted); font-size: .75rem; margin: .25rem 0 0; }
+  select, input[type=search] {
+    width: 100%;
+    font: inherit;
+    padding: .375rem .5rem;
+    background: var(--bg);
     color: var(--fg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+  .status { color: var(--muted); font-size: .75rem; }
+  #search {
+    position: absolute;
+    top: 16px;
+    right: 276px;
+    z-index: 1000;
+    width: 16rem;
+    box-shadow: 0 1px 6px rgb(0 0 0 / .2);
+    border-radius: 4px;
+  }
+  #search-status {
+    font-size: .75rem;
+    margin: .25rem 0 0;
+    background: var(--panel);
+    padding: 0 .5rem;
+    border-radius: 4px;
+  }
+  #search-status:empty { display: none; }
+  #details dl { margin: 0; font-size: .8125rem; }
+  #details dt { color: var(--muted); font-size: .6875rem; text-transform: uppercase; letter-spacing: .06em; margin-top: .5rem; }
+  #details dd { margin: 0; overflow-wrap: anywhere; }
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    aside { display: none; }
+    #readout, #search { right: 16px; }
   }
 </style>
 </head>
 <body>
-  <main>
+  <aside class="left">
     <div class="tag">Running locally</div>
     <h1>Jarvis</h1>
-    <p>One information layer for emergency response. This page just confirms the local server is up.</p>
-    <hr>
-    <p><code>GET /health</code> &nbsp;·&nbsp; <code>GET /docs</code></p>
-  </main>
+    <h2>Basemap</h2>
+    <label><input type="radio" name="basemap" value="satellite" checked> Satellite</label>
+    <label><input type="radio" name="basemap" value="streets"> Streets</label>
+  </aside>
+
+  <div id="map"></div>
+
+  <aside class="right">
+    <h2>Layers</h2>
+    <p>No data layers yet.</p>
+    <h2>Details</h2>
+    <div id="details"><p>Click something on the map.</p></div>
+  </aside>
+
+  <form id="search">
+    <input id="search-input" type="search" placeholder="Go to a city…" aria-label="Go to a city">
+    <p id="search-status"></p>
+  </form>
+
+  <div id="readout">
+    <div id="coords">—</div>
+    <p id="address">Move the cursor over the map</p>
+  </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+        crossorigin="anonymous"></script>
+<script type="module" src="/static/js/main.js"></script>
 </body>
 </html>
