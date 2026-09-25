@@ -1,7 +1,16 @@
-import { fetchJson, setStatus, showDetails } from "../../util.js";
+/*
+ * References:
+ *   https://www.weather.gov/documentation/services-web-api
+ */
+
+import { map } from "../../map.js";
+import { fetchJson, isLocalScan, setStatus, showDetails } from "../../util.js";
 
 const ALERTS_URL =
   "https://api.weather.gov/alerts/active?event=Red%20Flag%20Warning,Fire%20Weather%20Watch";
+// There are only a handful of fire-weather alerts nationally, so they're
+// fetched once and local scan just filters them to the view.
+const REFRESH_MS = 10 * 60 * 1000;
 
 function showWarning(p) {
   showDetails(p.event, [
@@ -14,7 +23,9 @@ function showWarning(p) {
 
 const layer = L.geoJSON(null, {
   style: { color: "#db2777", weight: 1.5, dashArray: "4 4", fillOpacity: 0.12 },
-  onEachFeature: (f, l) => l.on("click", () => showWarning(f.properties)),
+  onEachFeature: (feature, featureLayer) => {
+    featureLayer.on("click", () => showWarning(feature.properties));
+  },
 });
 
 // One missing zone shouldn't blank the whole layer, so failures become null.
@@ -29,28 +40,94 @@ async function fetchZoneGeometry(url) {
 
 // NWS fire-weather alerts usually come with no geometry, only zone links,
 // so each zone's shape is fetched separately.
-async function load() {
-  setStatus("warnings", "loading…");
-  try {
-    const alerts = await fetchJson(ALERTS_URL);
-    const zoneUrls = [...new Set(alerts.features.flatMap((a) => (a.geometry ? [] : a.properties.affectedZones)))];
-    const zoneGeometries = await Promise.all(zoneUrls.map(fetchZoneGeometry));
-    const zones = new Map(zoneUrls.map((url, i) => [url, zoneGeometries[i]]));
+async function fetchAlertFeatures() {
+  const alerts = await fetchJson(ALERTS_URL);
 
-    layer.clearLayers();
-    for (const alert of alerts.features) {
-      const geometries = alert.geometry
-        ? [alert.geometry]
-        : alert.properties.affectedZones.map((url) => zones.get(url)).filter(Boolean);
-      for (const geometry of geometries) {
-        layer.addData({ type: "Feature", geometry, properties: alert.properties });
+  const zoneUrlSet = new Set();
+  for (const alert of alerts.features) {
+    if (alert.geometry) {
+      continue;
+    }
+    for (const url of alert.properties.affectedZones) {
+      zoneUrlSet.add(url);
+    }
+  }
+  const zoneUrls = Array.from(zoneUrlSet);
+
+  const zoneGeometries = await Promise.all(zoneUrls.map(fetchZoneGeometry));
+  const zones = new Map();
+  for (let i = 0; i < zoneUrls.length; i++) {
+    zones.set(zoneUrls[i], zoneGeometries[i]);
+  }
+
+  const alertFeatures = [];
+  for (const alert of alerts.features) {
+    let geometries;
+    if (alert.geometry) {
+      geometries = [alert.geometry];
+    } else {
+      geometries = [];
+      for (const url of alert.properties.affectedZones) {
+        const geometry = zones.get(url);
+        if (geometry) {
+          geometries.push(geometry);
+        }
       }
     }
-    setStatus("warnings", `${alerts.features.length} active`);
-  } catch (err) {
-    setStatus("warnings", "unavailable");
-    console.error("warnings", err);
+
+    if (geometries.length === 0) {
+      continue;
+    }
+    alertFeatures.push({
+      type: "Feature",
+      geometry: { type: "GeometryCollection", geometries },
+      properties: alert.properties,
+    });
+  }
+  return alertFeatures;
+}
+
+let features = [];
+let fetchedAt = 0;
+let pending = null;
+
+function render() {
+  const local = isLocalScan();
+  const view = map.getBounds();
+
+  let shown = features;
+  if (local) {
+    shown = features.filter((feature) => L.geoJSON(feature).getBounds().intersects(view));
+  }
+  layer.clearLayers();
+  layer.addData(shown);
+
+  if (local) {
+    setStatus("warnings", `${shown.length} in view · ${features.length} nationally`);
+  } else {
+    setStatus("warnings", `${features.length} active`);
   }
 }
 
-export const warnings = { name: "warnings", layer, load, reloadOnMove: false };
+async function load() {
+  if (Date.now() - fetchedAt > REFRESH_MS) {
+    setStatus("warnings", "loading…");
+    try {
+      // Share one in-flight request between overlapping loads.
+      if (!pending) {
+        pending = fetchAlertFeatures().finally(() => {
+          pending = null;
+        });
+      }
+      features = await pending;
+      fetchedAt = Date.now();
+    } catch (err) {
+      setStatus("warnings", "unavailable");
+      console.error("warnings", err);
+      return;
+    }
+  }
+  render();
+}
+
+export const warnings = { name: "warnings", layer, load, reloadOnMove: true };

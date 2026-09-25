@@ -1,8 +1,19 @@
+/*
+ * References:
+ *   https://leafletjs.com/reference.html
+ *   https://leafletjs.com/examples/map-panes/
+ *   https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9
+ *   https://www.arcgis.com/home/item.html?id=a842e359856a4365b1ddf8cc34fde079
+ *   https://operations.osmfoundation.org/policies/tiles/
+ */
+
 const BOULDER = [40.015, -105.2705];
 
 export const map = L.map("map").setView(BOULDER, 12);
 
-// Points draw above polygons so markers inside a perimeter stay clickable.
+// Data rasters (hazard, fuels, density) draw above the basemap but under
+// polygons; points draw above polygons so markers inside a perimeter stay clickable.
+map.createPane("rasters").style.zIndex = 300;
 map.createPane("points").style.zIndex = 450;
 
 // Satellite imagery has no place names, so city/state labels ride on top of
@@ -37,7 +48,18 @@ document.querySelectorAll("input[name=basemap]").forEach((input) => {
   });
 });
 
+// Geometry detail that matches the screen: about half a pixel at the current zoom.
+export function viewSimplification() {
+  const degreesPerPixel = 360 / (256 * 2 ** map.getZoom());
+  return degreesPerPixel / 2;
+}
+
 export function viewBbox() {
-  const b = map.getBounds();
-  return { west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() };
+  const bounds = map.getBounds();
+  return {
+    west: bounds.getWest(),
+    south: bounds.getSouth(),
+    east: bounds.getEast(),
+    north: bounds.getNorth(),
+  };
 }

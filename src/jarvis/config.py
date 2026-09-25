@@ -1,3 +1,7 @@
+# References:
+#   https://github.com/theskumar/python-dotenv
+#   https://docs.python.org/3/library/dataclasses.html
+
 import os
 from dataclasses import dataclass
 from pathlib import Path

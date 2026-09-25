@@ -1,11 +1,18 @@
 export async function fetchJson(url, options) {
   const response = await fetch(url, options);
-  if (!response.ok) throw new Error(`${response.status} from ${new URL(url).host}`);
+  if (!response.ok) {
+    const host = new URL(url).host;
+    throw new Error(`${response.status} from ${host}`);
+  }
   return response.json();
 }
 
 export function formatDate(ms) {
   return ms ? new Date(ms).toLocaleString() : null;
+}
+
+export function isLocalScan() {
+  return document.getElementById("local-scan").checked;
 }
 
 export function setStatus(name, text) {

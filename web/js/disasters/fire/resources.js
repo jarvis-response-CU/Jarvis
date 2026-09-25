@@ -1,103 +1,117 @@
+/*
+ * References:
+ *   https://www.arcgis.com/home/item.html?id=2c36dbb008844081b017da6fd3d0d28b
+ *   https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Detailed_Water_Bodies/FeatureServer/0
+ *   https://developers.arcgis.com/rest/services-reference/enterprise/query-feature-service-layer/
+ *   https://developer.mozilla.org/en-US/docs/Web/API/AbortController
+ */
+
 import { map, viewBbox } from "../../map.js";
 import { fetchJson, setStatus, showDetails } from "../../util.js";
 
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 const MIN_ZOOM = 11;
 
-// Stations and water share one Overpass query; each entry knows how to ask
-// for its features and how to recognise them in the combined response.
-const kinds = [
-  {
-    name: "stations",
-    layer: L.layerGroup(),
+// Fire stations: USGS National Structures Dataset. Water: Esri's hosted copy
+// of the USGS National Hydrography Dataset; USGS's own NHD service took
+// 10–90+ s per query (September 2026), this copy answers in under a second.
+const kinds = {
+  stations: {
+    url: "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/Structures_Medical_Emergency_Response_v1/FeatureServer/2/query",
+    params: { where: "1=1", outFields: "NAME,ADDRESS,CITY,STATE", f: "geojson" },
     color: "#dc2626",
-    filter: (bbox) => `nwr["amenity"="fire_station"](${bbox});`,
-    matches: (tags) => tags.amenity === "fire_station",
-    title: () => "Fire station",
+    describe(p) {
+      const title = p.NAME || "Fire station";
+      const addressParts = [p.ADDRESS, p.CITY, p.STATE].filter(Boolean);
+      const rows = [
+        ["Type", "Fire / EMS station"],
+        ["Address", addressParts.join(", ")],
+      ];
+      return [title, rows];
+    },
   },
-  {
-    name: "water",
-    layer: L.layerGroup(),
+  water: {
+    url: "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Detailed_Water_Bodies/FeatureServer/0/query",
+    // 5 ha minimum skips ponds too small to matter.
+    params: {
+      where: "FTYPE IN ('Lake/Pond', 'Reservoir') AND SQKM >= 0.05",
+      outFields: "NAME,FTYPE,SQKM",
+      maxAllowableOffset: "0.0005",
+      outSR: "4326",
+      f: "geojson",
+    },
     color: "#2563eb",
-    filter: (bbox) => `nwr["natural"="water"]["water"~"^(reservoir|lake)$"](${bbox});`,
-    matches: (tags) => tags.natural === "water",
-    title: (tags) => (tags.water === "reservoir" ? "Reservoir" : "Lake"),
+    describe(p) {
+      const title = p.NAME?.trim() || p.FTYPE;
+      const hectares = p.SQKM * 100;
+      const rows = [
+        ["Type", p.FTYPE],
+        ["Area", `${hectares.toFixed(1)} ha`],
+      ];
+      return [title, rows];
+    },
   },
-];
+};
 
-function marker(element, color, title) {
-  const lat = element.lat ?? element.center?.lat;
-  const lon = element.lon ?? element.center?.lon;
-  const tags = element.tags || {};
-  return L.circleMarker([lat, lon], {
+function marker(latlng, kind, properties) {
+  const [title, rows] = kind.describe(properties);
+  const location = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+  const detailRows = rows.concat([["Location", location]]);
+
+  const circle = L.circleMarker(latlng, {
     pane: "points",
     radius: 6,
     color: "#fff",
     weight: 1.5,
-    fillColor: color,
+    fillColor: kind.color,
     fillOpacity: 0.95,
-  }).on("click", () =>
-    showDetails(tags.name || title, [
-      ["Type", title],
-      ["Operator", tags.operator],
-      ["Address", [tags["addr:housenumber"], tags["addr:street"], tags["addr:city"]].filter(Boolean).join(" ")],
-      ["Phone", tags.phone],
-      ["Location", `${lat.toFixed(4)}, ${lon.toFixed(4)}`],
-    ])
-  );
+  });
+  circle.on("click", () => {
+    showDetails(title, detailRows);
+  });
+  return circle;
 }
 
-let inflight;
+function makeEntry(name) {
+  const kind = kinds[name];
+  const layer = L.layerGroup();
+  let inflight;
 
-async function loadVisibleKinds() {
-  const visible = kinds.filter((k) => map.hasLayer(k.layer));
-  if (visible.length === 0) return;
-
-  if (map.getZoom() < MIN_ZOOM) {
-    for (const k of kinds) k.layer.clearLayers();
-    for (const k of visible) setStatus(k.name, "zoom in");
-    return;
-  }
-
-  const { west, south, east, north } = viewBbox();
-  const bbox = `${south},${west},${north},${east}`;
-  const query = `[out:json][timeout:25];(${visible.map((k) => k.filter(bbox)).join("")});out center tags;`;
-
-  inflight?.abort();
-  inflight = new AbortController();
-  for (const k of visible) setStatus(k.name, "loading…");
-  try {
-    const data = await fetchJson(OVERPASS_URL, {
-      method: "POST",
-      body: new URLSearchParams({ data: query }),
-      signal: inflight.signal,
-    });
-    for (const k of kinds) k.layer.clearLayers();
-    for (const element of data.elements) {
-      const tags = element.tags || {};
-      const kind = kinds.find((k) => k.matches(tags));
-      kind?.layer.addLayer(marker(element, kind.color, kind.title(tags)));
+  async function load() {
+    if (map.getZoom() < MIN_ZOOM) {
+      layer.clearLayers();
+      setStatus(name, "zoom in");
+      return;
     }
-    for (const k of visible) setStatus(k.name, `${k.layer.getLayers().length} in view`);
-  } catch (err) {
-    if (err.name === "AbortError") return;
-    for (const k of visible) setStatus(k.name, "unavailable");
-    console.error("overpass", err);
+    const { west, south, east, north } = viewBbox();
+    const params = new URLSearchParams({
+      ...kind.params,
+      geometry: `${west},${south},${east},${north}`,
+      geometryType: "esriGeometryEnvelope",
+      inSR: "4326",
+      spatialRel: "esriSpatialRelIntersects",
+    });
+
+    // A slow answer for an old view must not overwrite the current one.
+    inflight?.abort();
+    inflight = new AbortController();
+    setStatus(name, "loading…");
+    try {
+      const data = await fetchJson(`${kind.url}?${params}`, { signal: inflight.signal });
+      layer.clearLayers();
+      for (const feature of data.features) {
+        const center = L.geoJSON(feature).getBounds().getCenter();
+        layer.addLayer(marker(center, kind, feature.properties));
+      }
+      setStatus(name, `${data.features.length} in view`);
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      setStatus(name, "unavailable");
+      console.error(name, err);
+    }
   }
+
+  return { name, layer, load, reloadOnMove: true };
 }
 
-// Overpass gives each IP only a couple of query slots, and aborting a fetch
-// doesn't free the slot server-side, so bursts of triggers collapse into one query.
-let timer;
-
-function scheduleLoad() {
-  clearTimeout(timer);
-  timer = setTimeout(loadVisibleKinds, 400);
-}
-
-export const [stations, water] = kinds.map((k) => ({
-  name: k.name,
-  layer: k.layer,
-  load: scheduleLoad,
-  reloadOnMove: true,
-}));
+export const stations = makeEntry("stations");
+export const water = makeEntry("water");

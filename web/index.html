@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  References:
+    https://leafletjs.com/download.html
+    https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -65,17 +70,19 @@
   label { display: block; padding: .25rem 0; cursor: pointer; }
   p { color: var(--muted); margin: .5rem 0; }
   #map { height: 100vh; }
-  #readout {
+  #readout, #search {
     position: absolute;
     right: 276px;
-    bottom: 16px;
     z-index: 1000;
+    box-shadow: 0 1px 6px rgb(0 0 0 / .2);
+  }
+  #readout {
+    bottom: 16px;
     background: var(--panel);
     border: 1px solid var(--rule);
     border-radius: 6px;
     padding: .625rem .75rem;
     max-width: 22rem;
-    box-shadow: 0 1px 6px rgb(0 0 0 / .2);
   }
   #coords {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -83,22 +90,22 @@
   }
   #address { color: var(--muted); font-size: .75rem; margin: .25rem 0 0; }
   select, input[type=search] {
-    width: 100%;
     font: inherit;
-    padding: .375rem .5rem;
     background: var(--bg);
     color: var(--fg);
     border: 1px solid var(--rule);
     border-radius: 4px;
   }
+  select, input[type=search] {
+    width: 100%;
+    padding: .375rem .5rem;
+  }
   .status { color: var(--muted); font-size: .75rem; }
+  #disaster { font-weight: 600; margin-bottom: .5rem; }
+  .scan { padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
   #search {
-    position: absolute;
     top: 16px;
-    right: 276px;
-    z-index: 1000;
     width: 16rem;
-    box-shadow: 0 1px 6px rgb(0 0 0 / .2);
     border-radius: 4px;
   }
   #search-status {
@@ -110,7 +117,13 @@
   }
   #search-status:empty { display: none; }
   #details dl { margin: 0; font-size: .8125rem; }
-  #details dt { color: var(--muted); font-size: .6875rem; text-transform: uppercase; letter-spacing: .06em; margin-top: .5rem; }
+  #details dt {
+    color: var(--muted);
+    font-size: .6875rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-top: .5rem;
+  }
   #details dd { margin: 0; overflow-wrap: anywhere; }
   @media (max-width: 800px) {
     body { grid-template-columns: 1fr; }
@@ -123,10 +136,6 @@
   <aside class="left">
     <div class="tag">Running locally</div>
     <h1>Jarvis</h1>
-    <h2>Disaster</h2>
-    <select id="disaster">
-      <option value="fire">Wildfire</option>
-    </select>
     <h2>Basemap</h2>
     <label><input type="radio" name="basemap" value="satellite" checked> Satellite</label>
     <label><input type="radio" name="basemap" value="streets"> Streets</label>
@@ -135,6 +144,11 @@
   <div id="map"></div>
 
   <aside class="right">
+    <select id="disaster" aria-label="Disaster type">
+      <option value="fire">Wildfire</option>
+    </select>
+    <label class="scan"><input type="checkbox" id="local-scan" checked> Local scan <span class="status">only what's in view</span></label>
+    <section data-disaster="fire">
     <h2>Situation</h2>
     <label><input type="checkbox" data-layer="perimeters" checked> Fire perimeters <span class="status" data-status="perimeters"></span></label>
     <label><input type="checkbox" data-layer="hotspots" checked> Heat detections <span class="status" data-status="hotspots"></span></label>
@@ -144,8 +158,14 @@
     <label><input type="checkbox" data-layer="water"> Water sources <span class="status" data-status="water"></span></label>
     <h2>Risk</h2>
     <label><input type="checkbox" data-layer="hazard"> Wildfire hazard <span class="status" data-status="hazard"></span></label>
+    <label><input type="checkbox" data-layer="fuels"> Fuel type <span class="status" data-status="fuels"></span></label>
+    <label><input type="checkbox" data-layer="drought"> Drought <span class="status" data-status="drought"></span></label>
+    <h2>Exposure</h2>
+    <label><input type="checkbox" data-layer="buildings"> Buildings <span class="status" data-status="buildings"></span></label>
+    <label><input type="checkbox" data-layer="population"> Population <span class="status" data-status="population"></span></label>
+    </section>
     <h2>Details</h2>
-    <div id="details"><p>Click something on the map.</p></div>
+    <div id="details"><p>Click a fire or marker, or anywhere on the map for fuel, weather and drought.</p></div>
   </aside>
 
   <form id="search">

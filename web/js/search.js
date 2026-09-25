@@ -1,6 +1,13 @@
+/*
+ * References:
+ *   https://nominatim.org/release-docs/latest/api/Search/
+ *   https://operations.osmfoundation.org/policies/nominatim/
+ *   https://leafletjs.com/reference.html#map-fitbounds
+ */
+
 import { map } from "./map.js";
 import { fetchJson } from "./util.js";
-import { findFireByName } from "./disasters/fire/perimeters.js";
+import { findFire, showPerimeter } from "./disasters/fire/perimeters.js";
 
 const form = document.getElementById("search");
 const input = document.getElementById("search-input");
@@ -27,17 +34,28 @@ async function goToPlace(query) {
   }
 }
 
-form.addEventListener("submit", (event) => {
+// Fire names are checked first so "Aspen Acres" finds the fire, not a street.
+async function goToFire(query) {
+  try {
+    const fire = await findFire(query);
+    if (!fire) return false;
+    map.fitBounds(fire.bounds);
+    showPerimeter(fire.properties);
+    status.textContent = "";
+    return true;
+  } catch (err) {
+    console.warn("fire search", err);
+    return false;
+  }
+}
+
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const query = input.value.trim();
   if (!query) return;
-
-  const fire = findFireByName(query);
-  if (fire) {
-    map.fitBounds(fire.getBounds());
-    fire.fire("click");
-    status.textContent = "";
-    return;
+  status.textContent = "Searching…";
+  const foundFire = await goToFire(query);
+  if (!foundFire) {
+    goToPlace(query);
   }
-  goToPlace(query);
 });
