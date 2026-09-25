@@ -98,7 +98,7 @@
     font-size: .8125rem;
   }
   #address { color: var(--muted); font-size: .75rem; margin: .25rem 0 0; }
-  select, input[type=search] {
+  select, input[type=search], button {
     font: inherit;
     background: var(--bg);
     color: var(--fg);
@@ -112,6 +112,28 @@
   .status { color: var(--muted); font-size: .75rem; }
   #disaster { font-weight: 600; margin-bottom: .5rem; }
   .scan { padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
+  .sim-row { display: flex; gap: .5rem; align-items: center; }
+  .sim-row select { width: auto; }
+  button {
+    padding: .375rem .625rem;
+    cursor: pointer;
+  }
+  #sim-start {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  #sim-time { width: 100%; margin: .5rem 0; }
+  #sim-status, #sim-time-label { font-size: .75rem; }
+  .sim-overlay { image-rendering: pixelated; }
+  .beta {
+    margin-left: .25rem;
+    padding: 0 .3rem;
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    color: var(--accent);
+    font-size: .625rem;
+  }
   #search {
     top: 16px;
     width: 16rem;
@@ -172,6 +194,25 @@
     <h2>Exposure</h2>
     <label><input type="checkbox" data-layer="buildings"> Buildings <span class="status" data-status="buildings"></span></label>
     <label><input type="checkbox" data-layer="population"> Population <span class="status" data-status="population"></span></label>
+    <h2>Simulate <span class="beta">Beta</span></h2>
+    <div class="sim-row">
+      <button id="sim-start" type="button">Start a fire</button>
+      <select id="sim-hours" aria-label="Simulation length">
+        <option value="1">1 hour</option>
+        <option value="3" selected>3 hours</option>
+        <option value="6">6 hours</option>
+        <option value="12">12 hours</option>
+      </select>
+    </div>
+    <p id="sim-status"></p>
+    <div id="sim-controls" hidden>
+      <input id="sim-time" type="range" min="0" value="0" aria-label="Simulation time">
+      <div class="sim-row">
+        <button id="sim-play" type="button">Play</button>
+        <button id="sim-clear" type="button">Clear</button>
+      </div>
+      <p id="sim-time-label"></p>
+    </div>
     </section>
     <h2>Details</h2>
     <div id="details"><p>Click a fire or marker, or anywhere on the map for fuel, weather and drought.</p></div>

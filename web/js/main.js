@@ -9,6 +9,7 @@ import { setStatus } from "./util.js";
 import { fireLayers } from "./disasters/fire/index.js";
 import "./search.js";
 import "./readout.js";
+import "./simulations/fire.js";
 
 // Every layer has the same shape: { name, layer, load?, reloadOnMove }.
 // reloadOnMove layers fetch for the current view; the rest load the first time
