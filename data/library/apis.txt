@@ -1,0 +1,8 @@
+# APIs: one per line. Paste the link, then a space and a short note if you want.
+# Lines that start with # are ignored.
+https://api.weather.gov  National Weather Service: forecasts, alerts, red flag warnings
+https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0  NIFC active wildfire perimeters
+https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/Satellite_VIIRS_Thermal_Hotspots_and_Fire_Activity/FeatureServer/0  NASA VIIRS satellite heat detections
+https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/US_Drought_Intensity_v1/FeatureServer/3  US Drought Monitor, weekly
+https://edcintl.cr.usgs.gov/geoserver/landfire/wms  LANDFIRE fuel types (map service)
+https://nominatim.org/release-docs/latest/api/Search/  OpenStreetMap place search

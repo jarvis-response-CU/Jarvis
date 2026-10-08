@@ -1,0 +1,7 @@
+# Useful websites: one per line. Paste the link, then a space and a short note if you want.
+# Lines that start with # are ignored.
+https://landfire.gov  Fuel, vegetation and terrain data for fire modeling
+https://droughtmonitor.unl.edu  US Drought Monitor maps and data
+https://data-nifc.opendata.arcgis.com  National Interagency Fire Center open data
+https://www.emdat.be  EM-DAT international disaster database
+https://arxiv.org/abs/2509.16018  Paper our fire spread simulation is based on

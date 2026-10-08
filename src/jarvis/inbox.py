@@ -20,6 +20,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 from jarvis.config import PROJECT_ROOT
+from jarvis.library import sync_library
 
 INBOX_DIR = PROJECT_ROOT / "data" / "inbox"
 READERS = {".csv": pd.read_csv, ".xlsx": pd.read_excel}
@@ -123,6 +124,7 @@ def main():
     loaded = sync(engine)
     if not loaded:
         print("No files found in data/inbox/")
+    loaded.update(sync_library(engine))
     for table_name, rows in loaded.items():
         print(f"loaded {rows} rows into {table_name}")
 
