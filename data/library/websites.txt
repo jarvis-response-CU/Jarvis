@@ -6,3 +6,4 @@ https://data-nifc.opendata.arcgis.com  National Interagency Fire Center open dat
 https://www.emdat.be  EM-DAT international disaster database
 https://arxiv.org/abs/2509.16018  Paper our fire spread simulation is based on
 https://www.fema.gov/flood-maps/national-flood-hazard-layer  official floodplain polygons, including 100-year and 500-year flood zones, available as map service and downloadable layer
+https://www.fema.gov/flood-maps/products-tools/national-risk-index  risk scores by county and census tract, with separate components for each of the four hazards: fire, earthquakes, floods, hurricanes
