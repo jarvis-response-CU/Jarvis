@@ -9,3 +9,4 @@ https://nominatim.org/release-docs/latest/api/Search/  OpenStreetMap place searc
 https://www.fema.gov./api/open  FEMA API for disaster info, emergency management, etc.
 https://api.waterdata.usgs.gov/ogcapi/  water data by the USGS that includes streamflow and gauge height, both live and historical
 https://earthquake.usgs.gov/fdsnws/event/1/query  earthquake event location, depth and magnitude for any time and region, returned as GeoJSON, with no API key needed
+https://earthquake.usgs.gov/fdsnws/scenario/1/  shaking maps for hypothetical future quakes on known faults, running “what if” scenarios
