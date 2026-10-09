@@ -6,3 +6,4 @@ https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/Satellite_VII
 https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/US_Drought_Intensity_v1/FeatureServer/3  US Drought Monitor, weekly
 https://edcintl.cr.usgs.gov/geoserver/landfire/wms  LANDFIRE fuel types (map service)
 https://nominatim.org/release-docs/latest/api/Search/  OpenStreetMap place search
+https://www.fema.gov./api/open  FEMA API for disaster info, emergency management, etc.
