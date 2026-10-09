@@ -8,3 +8,4 @@ https://edcintl.cr.usgs.gov/geoserver/landfire/wms  LANDFIRE fuel types (map ser
 https://nominatim.org/release-docs/latest/api/Search/  OpenStreetMap place search
 https://www.fema.gov./api/open  FEMA API for disaster info, emergency management, etc.
 https://api.waterdata.usgs.gov/ogcapi/  water data by the USGS that includes streamflow and gauge height, both live and historical
+https://earthquake.usgs.gov/fdsnws/event/1/query  earthquake event location, depth and magnitude for any time and region, returned as GeoJSON, with no API key needed
