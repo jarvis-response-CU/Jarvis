@@ -7,3 +7,4 @@ https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/US_Drought_In
 https://edcintl.cr.usgs.gov/geoserver/landfire/wms  LANDFIRE fuel types (map service)
 https://nominatim.org/release-docs/latest/api/Search/  OpenStreetMap place search
 https://www.fema.gov./api/open  FEMA API for disaster info, emergency management, etc.
+https://api.waterdata.usgs.gov/ogcapi/  water data by the USGS that includes streamflow and gauge height, both live and historical
