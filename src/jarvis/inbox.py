@@ -8,7 +8,7 @@
 Each folder in data/inbox/ becomes one table in the database's "inbox" schema
 (data/inbox/emdat/ -> inbox.emdat). Every run rebuilds those tables from all
 files currently in the folder, so uploading a corrected file or another month
-of data never duplicates rows.
+of data never duplicates rows. A table that no folder loads into anymore gets dropped.
 
 Run it with:  python -m jarvis.inbox
 """
@@ -17,7 +17,7 @@ import os
 import re
 
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import MetaData, Table, create_engine, inspect, text
 
 from jarvis.config import PROJECT_ROOT
 from jarvis.library import sync_library
@@ -109,6 +109,24 @@ def sync(engine, inbox_dir=INBOX_DIR, schema=SCHEMA):
     return loaded
 
 
+def drop_stale_tables(engine, keep, schema=SCHEMA):
+    """Drop every table in the schema that isn't in `keep`. Returns their names.
+
+    sync() only visits folders that still exist, so without this a deleted
+    folder (or one whose last file was deleted) would leave its old table behind.
+    """
+    dropped = []
+    for table_name in inspect(engine).get_table_names(schema=schema):
+        full_name = table_name
+        if schema:
+            full_name = f"{schema}.{table_name}"
+        if full_name in keep:
+            continue
+        Table(table_name, MetaData(), schema=schema).drop(engine)
+        dropped.append(full_name)
+    return dropped
+
+
 def database_url():
     url = os.getenv("JARVIS_DATABASE_URL")
     if not url:
@@ -127,6 +145,8 @@ def main():
     loaded.update(sync_library(engine))
     for table_name, rows in loaded.items():
         print(f"loaded {rows} rows into {table_name}")
+    for table_name in drop_stale_tables(engine, keep=loaded):
+        print(f"dropped {table_name}: no folder in data/inbox/ loads into it")
 
 
 if __name__ == "__main__":

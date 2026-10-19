@@ -23,7 +23,10 @@ No accounts, passwords, or installs needed — just GitHub.
 - **Fixing a file:** upload the corrected file with the **same name** — it
   replaces the old one. Don't upload both versions.
 - **Removing data:** open the file on GitHub, click the trash-can icon, and commit.
-  The table is rebuilt without it.
+  The table is rebuilt without it. Removing a folder's last spreadsheet deletes its table.
+- **Only folders make tables.** Apart from `library_files` and `library_links` (made
+  from `data/library`), any table in the `inbox` schema without a folder of spreadsheets
+  here gets deleted the next time the loader runs, so don't create tables there by hand.
 - **Public repo:** anyone on the internet can see these files. Only upload
   public data you're allowed to share. Never upload passwords or personal info.
 - **Size:** GitHub's upload page takes files up to 25 MB.

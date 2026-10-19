@@ -4,9 +4,15 @@
 
 import pandas as pd
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 
-from jarvis.inbox import clean_columns, clean_name, database_url, sync
+from jarvis.inbox import (
+    clean_columns,
+    clean_name,
+    database_url,
+    drop_stale_tables,
+    sync,
+)
 
 
 def make_inbox(tmp_path):
@@ -51,6 +57,21 @@ def test_running_twice_does_not_duplicate_rows(tmp_path):
     sync(engine, inbox, schema=None)
     count = pd.read_sql("select count(*) as n from fire_history", engine)["n"][0]
     assert count == 3
+
+
+def test_table_is_dropped_when_its_last_file_is_removed(tmp_path):
+    engine = create_engine("sqlite://")
+    inbox = make_inbox(tmp_path)
+    scars = inbox / "burn_scars"
+    scars.mkdir()
+    pd.DataFrame({"name": ["Fourmile"]}).to_csv(scars / "scars.csv", index=False)
+    sync(engine, inbox, schema=None)
+
+    (scars / "scars.csv").unlink()
+    loaded = sync(engine, inbox, schema=None)
+
+    assert drop_stale_tables(engine, keep=loaded, schema=None) == ["burn_scars"]
+    assert inspect(engine).get_table_names() == ["fire_history"]
 
 
 def test_database_url_switches_to_psycopg(monkeypatch):
