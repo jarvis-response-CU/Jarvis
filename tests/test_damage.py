@@ -4,9 +4,16 @@
 import json
 
 import numpy as np
+import pandas as pd
 import pytest
 
-from jarvis.damage import fire_perimeter, inside
+from jarvis.damage import (
+    fire_perimeter,
+    inside,
+    loss_factors,
+    read_loss_factors,
+    wall_group,
+)
 
 
 def square(west, south, size):
@@ -41,3 +48,23 @@ def test_fire_perimeter_is_found_by_name(tmp_path):
     assert fire_perimeter(path, "MARSHALL") == marshall
     with pytest.raises(ValueError, match="no fire named"):
         fire_perimeter(path, "HAYMAN")
+
+
+def test_assessor_siding_is_grouped():
+    walls = ["Frame Wood/Shake", "Cement Board", "Strawbale", "", None]
+    assert wall_group(walls).tolist() == ["wood", "fiber_cement", "other", "unknown", "unknown"]
+
+
+def test_loss_factor_falls_back_to_siding_then_overall():
+    factors = {("wood", "asphalt"): 0.6, ("wood", "any"): 0.5, ("any", "any"): 0.4}
+    walls = ["Frame Wood/Shake", "Frame Wood/Shake", "Brick Veneer", None]
+    roofs = ["Asphalt", None, "Asphalt", "Asphalt"]
+    assert loss_factors(walls, roofs, factors).tolist() == [0.6, 0.5, 0.4, 0.4]
+
+
+def test_loss_table_without_an_overall_row_is_rejected(tmp_path):
+    path = tmp_path / "loss_factors.csv"
+    table = pd.DataFrame({"wall": ["wood"], "roof": ["any"], "loss_factor": [0.5]})
+    table.to_csv(path, index=False)
+    with pytest.raises(ValueError, match="overall row"):
+        read_loss_factors(path)
