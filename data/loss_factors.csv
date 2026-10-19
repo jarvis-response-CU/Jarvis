@@ -1,0 +1,6 @@
+wall,roof,loss_factor,destroyed,homes
+any,any,0.48,867,1807
+fiber_cement,any,0.082,9,256
+masonry,any,0.475,221,466
+stucco,any,0.367,45,132
+wood,any,0.606,558,915

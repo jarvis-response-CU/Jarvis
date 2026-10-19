@@ -10,7 +10,8 @@ value by a loss factor looked up from its siding and roof
 (data/loss_factors.csv, tuned by jarvis.tune_loss).
 
 Run it with:  python -m jarvis.damage
-That prints the exposed value inside the real 2021 Marshall Fire perimeter.
+That prints the exposed value and expected loss inside the real 2021 Marshall
+Fire perimeter.
 """
 
 import json
@@ -146,6 +147,10 @@ def main():
     exposed = structures[is_exposed]
     print(f"{len(exposed)} properties with buildings inside the Marshall Fire perimeter")
     print(f"exposed value: ${exposed['bld_value'].sum():,} at today's assessor values")
+
+    building_factors = loss_factors(exposed["wall"], exposed["roof"], read_loss_factors())
+    expected_loss = (exposed["bld_value"] * building_factors).sum()
+    print(f"expected loss: ${expected_loss:,.0f}")
 
 
 if __name__ == "__main__":
