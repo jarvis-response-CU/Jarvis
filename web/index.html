@@ -70,6 +70,15 @@
   label { display: block; padding: .25rem 0; cursor: pointer; }
   p { color: var(--muted); margin: .5rem 0; }
   #map { height: 100vh; }
+  .leaflet-rasters-pane img { image-rendering: pixelated; }
+  .place-label span {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 6px #000;
+  }
   #readout, #search {
     position: absolute;
     right: 276px;

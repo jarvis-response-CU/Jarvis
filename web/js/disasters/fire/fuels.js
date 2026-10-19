@@ -9,6 +9,8 @@
 
 import { fetchJson } from "../../util.js";
 
+import { COLORADO } from "../../map.js";
+
 const LANDFIRE_WMS = "https://edcintl.cr.usgs.gov/geoserver/landfire/wms";
 // LF2025 still has gaps (in September 2026, Boulder city and the plains east
 // of it return no data), so 2024 fills in underneath wherever 2025 is missing.
@@ -71,6 +73,11 @@ export const fuels = {
   name: "fuels",
   layer: L.tileLayer.wms(LANDFIRE_WMS, {
     pane: "rasters",
+    // 512 px tiles, halved on high-density screens so each screen pixel gets an image pixel.
+    tileSize: 512,
+    detectRetina: true,
+    bounds: COLORADO,
+    updateWhenZooming: false,
     layers: WMS_LAYER_ORDER.join(","),
     format: "image/png",
     transparent: true,

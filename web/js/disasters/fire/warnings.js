@@ -7,8 +7,8 @@ import { map } from "../../map.js";
 import { fetchJson, isLocalScan, setStatus, showDetails } from "../../util.js";
 
 const ALERTS_URL =
-  "https://api.weather.gov/alerts/active?event=Red%20Flag%20Warning,Fire%20Weather%20Watch";
-// There are only a handful of fire-weather alerts nationally, so they're
+  "https://api.weather.gov/alerts/active?area=CO&event=Red%20Flag%20Warning,Fire%20Weather%20Watch";
+// There are only a handful of fire-weather alerts in Colorado, so they're
 // fetched once and local scan just filters them to the view.
 const REFRESH_MS = 10 * 60 * 1000;
 
@@ -103,7 +103,7 @@ function render() {
   layer.addData(shown);
 
   if (local) {
-    setStatus("warnings", `${shown.length} in view · ${features.length} nationally`);
+    setStatus("warnings", `${shown.length} in view · ${features.length} in Colorado`);
   } else {
     setStatus("warnings", `${features.length} active`);
   }

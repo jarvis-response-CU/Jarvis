@@ -5,7 +5,7 @@
  *   https://leafletjs.com/reference.html#map-fitbounds
  */
 
-import { map } from "./map.js";
+import { COLORADO, map } from "./map.js";
 import { fetchJson } from "./util.js";
 import { findFire, showPerimeter } from "./disasters/fire/perimeters.js";
 
@@ -19,7 +19,9 @@ L.DomEvent.disableScrollPropagation(form);
 async function goToPlace(query) {
   status.textContent = "Searching…";
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
+    // viewbox is west,north,east,south; bounded keeps results inside it.
+    const viewbox = [COLORADO.getWest(), COLORADO.getNorth(), COLORADO.getEast(), COLORADO.getSouth()];
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&viewbox=${viewbox}&bounded=1&q=${encodeURIComponent(query)}`;
     const [place] = await fetchJson(url);
     if (!place) {
       status.textContent = "No match";

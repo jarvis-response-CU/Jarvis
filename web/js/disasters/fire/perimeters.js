@@ -4,7 +4,7 @@
  *   https://developers.arcgis.com/rest/services-reference/enterprise/query-feature-service-layer/
  */
 
-import { viewBbox, viewSimplification } from "../../map.js";
+import { COLORADO, viewBbox, viewSimplification } from "../../map.js";
 import { fetchJson, formatDate, isLocalScan, setStatus, showDetails } from "../../util.js";
 
 const PERIMETERS_URL =
@@ -13,8 +13,9 @@ const FIELDS = [
   "poly_IncidentName", "poly_GISAcres", "poly_DateCurrent", "attr_PercentContained",
   "attr_POOState", "attr_FireCause", "attr_FireDiscoveryDateTime", "attr_IncidentTypeCategory",
 ].join(",");
-// Full-resolution national perimeters are ~30 MB; this brings them under 1 MB.
-const NATIONAL_SIMPLIFICATION = 0.001;
+// Full-resolution perimeters nationwide are ~30 MB; the same simplification
+// keeps the statewide download small.
+const STATE_SIMPLIFICATION = 0.001;
 
 function containmentColor(percent) {
   if (percent == null) return "#e2664a";
@@ -69,34 +70,43 @@ function queryUrl(extra) {
   return `${PERIMETERS_URL}?${params}`;
 }
 
-// Global mode downloads the whole country once and pans for free after that;
+// Statewide mode downloads all of Colorado once and pans for free after that;
 // local mode asks for just the view, at detail matched to the zoom level.
-let hasNationalData = false;
+function envelope(bbox) {
+  return {
+    geometry: bbox,
+    geometryType: "esriGeometryEnvelope",
+    inSR: "4326",
+    spatialRel: "esriSpatialRelIntersects",
+  };
+}
+
+let hasStateData = false;
 
 async function load() {
   const local = isLocalScan();
-  if (!local && hasNationalData) return;
+  if (!local && hasStateData) return;
 
   let url;
   if (local) {
     const { west, south, east, north } = viewBbox();
     url = queryUrl({
-      geometry: `${west},${south},${east},${north}`,
-      geometryType: "esriGeometryEnvelope",
-      inSR: "4326",
-      spatialRel: "esriSpatialRelIntersects",
+      ...envelope(`${west},${south},${east},${north}`),
       maxAllowableOffset: String(viewSimplification()),
     });
   } else {
-    url = queryUrl({ maxAllowableOffset: String(NATIONAL_SIMPLIFICATION) });
+    url = queryUrl({
+      ...envelope(COLORADO.toBBoxString()),
+      maxAllowableOffset: String(STATE_SIMPLIFICATION),
+    });
   }
 
   setStatus("perimeters", "loading…");
   try {
     const data = await fetchJson(url);
     layer.clearLayers().addData(data);
-    hasNationalData = !local;
-    const scope = local ? "in view" : "active";
+    hasStateData = !local;
+    const scope = local ? "in view" : "in Colorado";
     setStatus("perimeters", `${data.features.length} ${scope}`);
   } catch (err) {
     setStatus("perimeters", "unavailable");
@@ -104,12 +114,14 @@ async function load() {
   }
 }
 
-// Asks the service directly so a fire outside the current view is still found.
+// Asks the service directly so a fire outside the current view is still found,
+// as long as it's in Colorado.
 export async function findFire(name) {
   const escaped = name.toUpperCase().replaceAll("'", "''");
   const params = new URLSearchParams({
     where: `UPPER(poly_IncidentName) LIKE '%${escaped}%'`,
     outFields: FIELDS,
+    ...envelope(COLORADO.toBBoxString()),
     orderByFields: "poly_GISAcres DESC",
     resultRecordCount: "1",
     maxAllowableOffset: "0.01",

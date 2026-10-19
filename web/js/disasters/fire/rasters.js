@@ -5,6 +5,8 @@
  *   https://leafletjs.com/examples/extending/extending-2-layers.html
  */
 
+import { COLORADO } from "../../map.js";
+
 const USFS_IMAGERY = "https://imagery.geoplatform.gov/iipp/rest/services/Fire_Aviation";
 const USFS_ATTRIBUTION = "&copy; USDA Forest Service";
 
@@ -23,11 +25,15 @@ const ImageServerTiles = L.TileLayer.extend({
     const ymax = WEB_MERCATOR_EXTENT - coords.y * tileSpan;
     const ymin = ymax - tileSpan;
 
+    // One image pixel per screen pixel, so high-density screens aren't stretched.
+    const imagePixels = Math.round(pixels * Math.min(window.devicePixelRatio, 2));
+
     const params = new URLSearchParams({
       bbox: `${xmin},${ymin},${xmax},${ymax}`,
       bboxSR: "3857",
       imageSR: "3857",
-      size: `${pixels},${pixels}`,
+      size: `${imagePixels},${imagePixels}`,
+      interpolation: "RSP_NearestNeighbor",
       f: "image",
       ...this.options.exportParams,
     });
@@ -40,6 +46,8 @@ function usfsLayer(service, options) {
     pane: "rasters",
     // Requests take ~1 s at any size, so 512 px tiles mean a quarter as many queued requests.
     tileSize: 512,
+    bounds: COLORADO,
+    updateWhenZooming: false,
     serviceUrl: `${USFS_IMAGERY}/${service}/ImageServer`,
     attribution: USFS_ATTRIBUTION,
     ...options,
