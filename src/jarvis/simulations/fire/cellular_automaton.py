@@ -25,6 +25,9 @@ import numpy as np
 DIRECTIONS = np.arange(8) * np.pi / 4
 STEPS = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
 STEP_LENGTH_FACTOR = np.array([np.hypot(dx, dy) for dx, dy in STEPS])
+# Rothermel's ratio keeps growing with wind, which draws a needle at 25 m/s.
+# Starting value, to be tuned against the Marshall Fire's perimeter.
+MAX_LENGTH_TO_WIDTH = 8
 
 
 @dataclass(frozen=True)
@@ -81,7 +84,7 @@ def spread_rates(vx: np.ndarray, vy: np.ndarray) -> np.ndarray:
     max_rate = 0.1 * speed + 5e-3  # "10% rule": spread ~ a tenth of wind speed
     # Rothermel (1991) length-to-width ratio 1 + 0.25*U with U in mi/h;
     # 0.5592 = 0.25 * 2.237 is the same rule with U in m/s.
-    length_to_width = 1 + 0.5592 * speed
+    length_to_width = np.minimum(1 + 0.5592 * speed, MAX_LENGTH_TO_WIDTH)
     eccentricity = np.sqrt(1 - (1 / length_to_width) ** 2)
 
     angle = DIRECTIONS[:, None, None] - wind_direction[None]
