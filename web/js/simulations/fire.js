@@ -31,6 +31,16 @@ function formatMinutes(total) {
   return h ? `${h} h ${m} min` : `${m} min`;
 }
 
+function formatDollars(amount) {
+  if (amount >= 1e9) {
+    return `$${(amount / 1e9).toFixed(2)}B`;
+  }
+  if (amount >= 1e6) {
+    return `$${(amount / 1e6).toFixed(1)}M`;
+  }
+  return `$${Math.round(amount / 1e3)}K`;
+}
+
 // Draws every cell that has ignited by `minute` into the run's canvas.
 function drawFrame(minute) {
   const { result, canvas, overlay } = run;
@@ -56,7 +66,13 @@ function drawFrame(minute) {
 
   const cellArea = result.cell_m ** 2;
   const hectares = Math.round((burned * cellArea) / 10_000);
-  timeLabel.textContent = `${formatMinutes(minute)} · ${hectares.toLocaleString()} ha burned`;
+  let label = `${formatMinutes(minute)} · ${hectares.toLocaleString()} ha burned`;
+  if (result.damage) {
+    const damageSoFar = result.damage.by_minute;
+    label += ` · ${damageSoFar.properties[minute].toLocaleString()} properties`;
+    label += ` · ${formatDollars(damageSoFar.expected_loss[minute])} expected loss`;
+  }
+  timeLabel.textContent = label;
 }
 
 function stop() {
@@ -154,9 +170,24 @@ async function lightFire(latlng) {
     ["Wind (NWS, held constant)", wind.label],
     ["Model", "Beta: wind-driven cellular automaton (Ebby & Farazmand 2025); ignores fuel, terrain and humidity"],
     ["Grid", `${result.cell_m.toFixed(0)} m cells`],
+    ...damageRows(result.damage),
   ]);
   drawFrame(0);
   play();
+}
+
+function damageRows(damage) {
+  if (!damage) {
+    return [["Damage", "Unavailable: the county building files aren't downloaded on this server"]];
+  }
+  return [
+    ["Properties reached", damage.properties.toLocaleString()],
+    ["Exposed building value", formatDollars(damage.exposed_value)],
+    [
+      "Expected loss (Beta)",
+      `${formatDollars(damage.expected_loss)}. Loss factors come from the 2021 Marshall Fire, which burned in extreme wind, so this runs high for a calmer fire`,
+    ],
+  ];
 }
 
 startButton.addEventListener("click", () => {

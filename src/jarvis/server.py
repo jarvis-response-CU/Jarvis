@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from jarvis import __version__
 from jarvis.config import PROJECT_ROOT, load_settings
+from jarvis.simulations.fire.damage_run import estimate_damage, load_structures
 from jarvis.simulations.fire.map_run import run_at_point
 
 WEB_DIR = PROJECT_ROOT / "web"
@@ -39,7 +40,13 @@ class FireRun(BaseModel):
 
 @app.post("/api/fire/simulate")
 def simulate_fire(run: FireRun) -> dict:
-    return run_at_point(run.lat, run.lng, run.hours, run.wind_speed_mps, run.wind_from_deg)
+    result = run_at_point(run.lat, run.lng, run.hours, run.wind_speed_mps, run.wind_from_deg)
+    try:
+        result["damage"] = estimate_damage(result, load_structures())
+    except FileNotFoundError:
+        # The raw county files aren't downloaded; the spread still works without damage.
+        result["damage"] = None
+    return result
 
 
 def run() -> None:

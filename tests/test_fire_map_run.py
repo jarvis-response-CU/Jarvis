@@ -3,6 +3,7 @@
 #   https://docs.pytest.org/en/stable/how-to/parametrize.html
 
 import numpy as np
+import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
@@ -67,11 +68,14 @@ def test_ignition_point_is_inside_the_bounds_and_burns_first():
     assert cells_of(result)[:, 2].max() <= result["duration_min"]
 
 
-def test_endpoint_runs_and_validates():
+def test_endpoint_runs_and_validates(monkeypatch):
+    one_house = pd.DataFrame([{"lat": 40.0, "lon": -105.3, "bld_value": 100, "loss_factor": 0.5}])
+    monkeypatch.setattr("jarvis.server.load_structures", lambda: one_house)
     request = {"lat": 40.0, "lng": -105.3, "hours": 1, "wind_speed_mps": 4, "wind_from_deg": 270}
     ok = client.post("/api/fire/simulate", json=request)
     assert ok.status_code == 200
     assert len(ok.json()["cells"]) > 0
+    assert ok.json()["damage"]["properties"] == 1
 
     bad_request = dict(request)
     bad_request["lat"] = 95
