@@ -24,6 +24,7 @@ const timeLabel = document.getElementById("sim-time-label");
 
 let run = null; // { result, overlay, canvas, wind }
 let playTimer = null;
+let runId = 0;
 
 function formatMinutes(total) {
   const h = Math.floor(total / 60);
@@ -104,6 +105,7 @@ function play() {
 }
 
 function clear() {
+  runId++;
   stop();
   if (run) {
     map.removeLayer(run.overlay);
@@ -117,6 +119,7 @@ async function lightFire(latlng) {
   delete map.getContainer().dataset.clickClaimed;
   map.getContainer().style.cursor = "";
   clear();
+  const thisRun = runId;
   status.textContent = "Getting wind…";
 
   let wind;
@@ -127,6 +130,7 @@ async function lightFire(latlng) {
     console.warn("simulation wind", err);
     wind = { speedMps: 0, fromDeg: 0, label: "unavailable, running with no wind" };
   }
+  if (thisRun !== runId) return;
 
   status.textContent = "Simulating…";
   let result;
@@ -147,6 +151,7 @@ async function lightFire(latlng) {
     console.error("simulation", err);
     return;
   }
+  if (thisRun !== runId) return;
 
   const canvas = document.createElement("canvas");
   canvas.width = result.cols;
@@ -190,12 +195,16 @@ function damageRows(damage) {
   ];
 }
 
+function onLightClick(event) {
+  lightFire(event.latlng);
+}
+
 startButton.addEventListener("click", () => {
   // Tells the point report to ignore the click that lights the fire.
   map.getContainer().dataset.clickClaimed = "true";
   map.getContainer().style.cursor = "crosshair";
   status.textContent = "Click the map to light a fire";
-  map.once("click", (event) => lightFire(event.latlng));
+  map.once("click", onLightClick);
 });
 
 slider.addEventListener("input", () => {
@@ -204,3 +213,10 @@ slider.addEventListener("input", () => {
 });
 playButton.addEventListener("click", play);
 clearButton.addEventListener("click", clear);
+// Another disaster gets a clean map: no fire, and no "Start a fire" still waiting for a click.
+document.getElementById("disaster").addEventListener("change", () => {
+  map.off("click", onLightClick);
+  delete map.getContainer().dataset.clickClaimed;
+  map.getContainer().style.cursor = "";
+  clear();
+});

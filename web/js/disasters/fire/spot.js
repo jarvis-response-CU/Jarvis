@@ -16,6 +16,11 @@ async function settle(promise, fallback) {
 
 let latestClick = 0;
 
+// A report still loading when the disaster changes is dropped.
+document.getElementById("disaster").addEventListener("change", () => {
+  latestClick++;
+});
+
 async function showPointReport(lat, lng) {
   const clickId = ++latestClick;
   const location = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
@@ -42,6 +47,7 @@ async function showPointReport(lat, lng) {
 // click another tool has claimed (like lighting a simulated fire) is skipped.
 map.on("click", (event) => {
   if (map.getContainer().dataset.clickClaimed) return;
+  if (document.getElementById("disaster").value !== "fire") return;
   const clickedFeature = event.originalEvent.target.classList.contains("leaflet-interactive");
   if (clickedFeature) return;
   showPointReport(event.latlng.lat, event.latlng.lng);

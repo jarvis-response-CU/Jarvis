@@ -36,7 +36,7 @@ async function goToPlace(query) {
   }
 }
 
-// Fire names are checked first so "Aspen Acres" finds the fire, not a street.
+// On Wildfire, fire names are checked first so "Aspen Acres" finds the fire, not a street.
 async function goToFire(query) {
   try {
     const fire = await findFire(query);
@@ -56,7 +56,10 @@ form.addEventListener("submit", async (event) => {
   const query = input.value.trim();
   if (!query) return;
   status.textContent = "Searching…";
-  const foundFire = await goToFire(query);
+  let foundFire = false;
+  if (document.getElementById("disaster").value === "fire") {
+    foundFire = await goToFire(query);
+  }
   if (!foundFire) {
     goToPlace(query);
   }

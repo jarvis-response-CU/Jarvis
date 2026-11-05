@@ -85,7 +85,11 @@ let hasStateData = false;
 
 async function load() {
   const local = isLocalScan();
-  if (!local && hasStateData) return;
+  // Hiding the layer cleared its status, so showing it again puts the count back.
+  if (!local && hasStateData) {
+    setStatus("perimeters", `${layer.getLayers().length} in Colorado`);
+    return;
+  }
 
   let url;
   if (local) {

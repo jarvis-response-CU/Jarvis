@@ -13,7 +13,7 @@ const USFS_ATTRIBUTION = "&copy; USDA Forest Service";
 const WEB_MERCATOR_EXTENT = 20037508.342789244;
 
 // These services have no tile cache, so each tile asks exportImage for its own bbox.
-const ImageServerTiles = L.TileLayer.extend({
+export const ImageServerTiles = L.TileLayer.extend({
   getTileUrl(coords) {
     const pixels = this.getTileSize().x;
     const worldWidth = 2 * WEB_MERCATOR_EXTENT;

@@ -177,6 +177,7 @@
   <aside class="right">
     <select id="disaster" aria-label="Disaster type">
       <option value="fire">Wildfire</option>
+      <option value="earthquake">Earthquake</option>
     </select>
     <label class="scan"><input type="checkbox" id="local-scan" checked> Local scan <span class="status">only what's in view</span></label>
     <section data-disaster="fire">
@@ -214,8 +215,21 @@
       <p id="sim-time-label"></p>
     </div>
     </section>
+    <section data-disaster="earthquake">
+    <h2>Situation</h2>
+    <label><input type="checkbox" data-layer="earthquake-events" checked> Recent earthquakes <span class="status" data-status="earthquake-events"></span></label>
+    <label><input type="checkbox" data-layer="earthquake-shaking" checked> Shaking intensity <span class="status" data-status="earthquake-shaking"></span></label>
+    <h2>Resources</h2>
+    <label><input type="checkbox" data-layer="earthquake-hospitals"> Hospitals <span class="status" data-status="earthquake-hospitals"></span></label>
+    <label><input type="checkbox" data-layer="earthquake-shelters"> Shelters <span class="status" data-status="earthquake-shelters"></span></label>
+    <h2>Risk</h2>
+    <label><input type="checkbox" data-layer="earthquake-risk"> Earthquake risk <span class="status" data-status="earthquake-risk"></span></label>
+    <h2>Exposure</h2>
+    <label><input type="checkbox" data-layer="earthquake-buildings"> Buildings <span class="status" data-status="earthquake-buildings"></span></label>
+    <label><input type="checkbox" data-layer="earthquake-population"> Population <span class="status" data-status="earthquake-population"></span></label>
+    </section>
     <h2>Details</h2>
-    <div id="details"><p>Click a fire or marker, or anywhere on the map for fuel, weather and drought.</p></div>
+    <div id="details"></div>
   </aside>
 
   <form id="search">
