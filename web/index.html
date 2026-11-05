@@ -178,6 +178,7 @@
     <select id="disaster" aria-label="Disaster type">
       <option value="fire">Wildfire</option>
       <option value="earthquake">Earthquake</option>
+      <option value="hurricane">Hurricane</option>
     </select>
     <label class="scan"><input type="checkbox" id="local-scan" checked> Local scan <span class="status">only what's in view</span></label>
     <section data-disaster="fire">
@@ -227,6 +228,19 @@
     <h2>Exposure</h2>
     <label><input type="checkbox" data-layer="earthquake-buildings"> Buildings <span class="status" data-status="earthquake-buildings"></span></label>
     <label><input type="checkbox" data-layer="earthquake-population"> Population <span class="status" data-status="earthquake-population"></span></label>
+    </section>
+    <section data-disaster="hurricane">
+    <h2>Situation</h2>
+    <label><input type="checkbox" data-layer="hurricane-tracks" checked> Storm tracks <span class="status" data-status="hurricane-tracks"></span></label>
+    <label><input type="checkbox" data-layer="hurricane-warnings" checked> Hurricane warnings <span class="status" data-status="hurricane-warnings"></span></label>
+    <h2>Resources</h2>
+    <label><input type="checkbox" data-layer="hurricane-hospitals"> Hospitals <span class="status" data-status="hurricane-hospitals"></span></label>
+    <label><input type="checkbox" data-layer="hurricane-shelters"> Shelters <span class="status" data-status="hurricane-shelters"></span></label>
+    <h2>Risk</h2>
+    <label><input type="checkbox" data-layer="hurricane-risk"> Hurricane risk <span class="status" data-status="hurricane-risk"></span></label>
+    <h2>Exposure</h2>
+    <label><input type="checkbox" data-layer="hurricane-buildings"> Buildings <span class="status" data-status="hurricane-buildings"></span></label>
+    <label><input type="checkbox" data-layer="hurricane-population"> Population <span class="status" data-status="hurricane-population"></span></label>
     </section>
     <h2>Details</h2>
     <div id="details"></div>

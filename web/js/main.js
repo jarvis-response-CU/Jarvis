@@ -8,6 +8,7 @@ import { map } from "./map.js";
 import { setStatus } from "./util.js";
 import { fireLayers } from "./disasters/fire/index.js";
 import { earthquakeLayers } from "./disasters/earthquake/index.js";
+import { hurricaneLayers } from "./disasters/hurricane/index.js";
 import "./search.js";
 import "./readout.js";
 import "./simulations/fire.js";
@@ -18,6 +19,7 @@ import "./simulations/fire.js";
 const layers = [
   ...fireLayers,
   ...earthquakeLayers,
+  ...hurricaneLayers,
 ];
 
 const loadedOnce = new Set();
