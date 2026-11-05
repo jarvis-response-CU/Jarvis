@@ -9,6 +9,7 @@ import { setStatus } from "./util.js";
 import { fireLayers } from "./disasters/fire/index.js";
 import { earthquakeLayers } from "./disasters/earthquake/index.js";
 import { hurricaneLayers } from "./disasters/hurricane/index.js";
+import { floodLayers } from "./disasters/flood/index.js";
 import "./search.js";
 import "./readout.js";
 import "./simulations/fire.js";
@@ -20,6 +21,7 @@ const layers = [
   ...fireLayers,
   ...earthquakeLayers,
   ...hurricaneLayers,
+  ...floodLayers,
 ];
 
 const loadedOnce = new Set();

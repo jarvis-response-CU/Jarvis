@@ -179,6 +179,7 @@
       <option value="fire">Wildfire</option>
       <option value="earthquake">Earthquake</option>
       <option value="hurricane">Hurricane</option>
+      <option value="flood">Flooding</option>
     </select>
     <label class="scan"><input type="checkbox" id="local-scan" checked> Local scan <span class="status">only what's in view</span></label>
     <section data-disaster="fire">
@@ -241,6 +242,19 @@
     <h2>Exposure</h2>
     <label><input type="checkbox" data-layer="hurricane-buildings"> Buildings <span class="status" data-status="hurricane-buildings"></span></label>
     <label><input type="checkbox" data-layer="hurricane-population"> Population <span class="status" data-status="hurricane-population"></span></label>
+    </section>
+    <section data-disaster="flood">
+    <h2>Situation</h2>
+    <label><input type="checkbox" data-layer="flood-warnings" checked> Flood warnings <span class="status" data-status="flood-warnings"></span></label>
+    <label><input type="checkbox" data-layer="flood-gauges" checked> Stream gauges <span class="status" data-status="flood-gauges"></span></label>
+    <h2>Resources</h2>
+    <label><input type="checkbox" data-layer="flood-hospitals"> Hospitals <span class="status" data-status="flood-hospitals"></span></label>
+    <label><input type="checkbox" data-layer="flood-shelters"> Shelters <span class="status" data-status="flood-shelters"></span></label>
+    <h2>Risk</h2>
+    <label><input type="checkbox" data-layer="flood-risk"> Flood risk <span class="status" data-status="flood-risk"></span></label>
+    <h2>Exposure</h2>
+    <label><input type="checkbox" data-layer="flood-buildings"> Buildings <span class="status" data-status="flood-buildings"></span></label>
+    <label><input type="checkbox" data-layer="flood-population"> Population <span class="status" data-status="flood-population"></span></label>
     </section>
     <h2>Details</h2>
     <div id="details"></div>
