@@ -4,14 +4,15 @@
  *   https://leafletjs.com/examples/geojson/
  */
 
-import { COLORADO, viewBbox, viewSimplification } from "../../map.js";
+import { REGIONS, viewBbox, viewSimplification } from "../../map.js";
 import { fetchJson, formatDate, isLocalScan, setStatus, showDetails } from "../../util.js";
 
 // Empty until we have the data.
 const SHAKING_URL = "";
 const FIELDS = ["name", "mmi", "updated"].join(",");
+const REGION = REGIONS.earthquake;
 // Same simplification fire perimeters use for the statewide download.
-const STATE_SIMPLIFICATION = 0.001;
+const REGION_SIMPLIFICATION = 0.001;
 
 // Modified Mercalli intensity: damage starts around VI, and VIII and up is severe.
 function intensityColor(mmi) {
@@ -56,7 +57,7 @@ function queryUrl(extra) {
   return `${SHAKING_URL}?${params}`;
 }
 
-// Statewide mode downloads all of Colorado once and pans for free after that;
+// Region-wide mode downloads the whole county once and pans for free after that;
 // local mode asks for just the view, at detail matched to the zoom level.
 function envelope(bbox) {
   return {
@@ -73,7 +74,7 @@ async function load() {
   const local = isLocalScan();
   // Hiding the layer cleared its status, so showing it again puts the count back.
   if (!local && hasStateData) {
-    setStatus("earthquake-shaking", `${layer.getLayers().length} in Colorado`);
+    setStatus("earthquake-shaking", `${layer.getLayers().length} in ${REGION.name}`);
     return;
   }
 
@@ -86,8 +87,8 @@ async function load() {
     });
   } else {
     url = queryUrl({
-      ...envelope(COLORADO.toBBoxString()),
-      maxAllowableOffset: String(STATE_SIMPLIFICATION),
+      ...envelope(REGION.bounds.toBBoxString()),
+      maxAllowableOffset: String(REGION_SIMPLIFICATION),
     });
   }
 
@@ -96,7 +97,7 @@ async function load() {
     const data = await fetchJson(url);
     layer.clearLayers().addData(data);
     hasStateData = !local;
-    const scope = local ? "in view" : "in Colorado";
+    const scope = local ? "in view" : `in ${REGION.name}`;
     setStatus("earthquake-shaking", `${data.features.length} ${scope}`);
   } catch (err) {
     setStatus("earthquake-shaking", "unavailable");

@@ -4,14 +4,15 @@
  *   https://leafletjs.com/examples/geojson/
  */
 
-import { COLORADO, viewBbox, viewSimplification } from "../../map.js";
+import { REGIONS, viewBbox, viewSimplification } from "../../map.js";
 import { fetchJson, formatDate, isLocalScan, setStatus, showDetails } from "../../util.js";
 
 // Empty until we have the data.
 const TRACKS_URL = "";
 const FIELDS = ["name", "category", "wind_mph", "pressure_mb", "updated"].join(",");
+const REGION = REGIONS.hurricane;
 // Same simplification fire perimeters use for the statewide download.
-const STATE_SIMPLIFICATION = 0.001;
+const REGION_SIMPLIFICATION = 0.001;
 
 // Saffir-Simpson category, 0 below hurricane strength; 3 and up is a major hurricane.
 function categoryColor(category) {
@@ -69,7 +70,7 @@ function queryUrl(extra) {
   return `${TRACKS_URL}?${params}`;
 }
 
-// Statewide mode downloads all of Colorado once and pans for free after that;
+// Region-wide mode downloads the whole county once and pans for free after that;
 // local mode asks for just the view, at detail matched to the zoom level.
 function envelope(bbox) {
   return {
@@ -86,7 +87,7 @@ async function load() {
   const local = isLocalScan();
   // Hiding the layer cleared its status, so showing it again puts the count back.
   if (!local && hasStateData) {
-    setStatus("hurricane-tracks", `${layer.getLayers().length} in Colorado`);
+    setStatus("hurricane-tracks", `${layer.getLayers().length} in ${REGION.name}`);
     return;
   }
 
@@ -99,8 +100,8 @@ async function load() {
     });
   } else {
     url = queryUrl({
-      ...envelope(COLORADO.toBBoxString()),
-      maxAllowableOffset: String(STATE_SIMPLIFICATION),
+      ...envelope(REGION.bounds.toBBoxString()),
+      maxAllowableOffset: String(REGION_SIMPLIFICATION),
     });
   }
 
@@ -109,7 +110,7 @@ async function load() {
     const data = await fetchJson(url);
     layer.clearLayers().addData(data);
     hasStateData = !local;
-    const scope = local ? "in view" : "in Colorado";
+    const scope = local ? "in view" : `in ${REGION.name}`;
     setStatus("hurricane-tracks", `${data.features.length} ${scope}`);
   } catch (err) {
     setStatus("hurricane-tracks", "unavailable");

@@ -9,8 +9,22 @@
 
 const BOULDER = [40.015, -105.2705];
 
-// Jarvis covers Boulder County wildfire, so nothing past the state line is shown.
+// Wildfire covers Boulder County, so its map stops at the state line. The other
+// disasters each cover one county, with bounds from the Census TIGERweb county layer.
 export const COLORADO = L.latLngBounds([36.99, -109.06], [41.0, -102.04]);
+
+export const REGIONS = {
+  fire: { name: "Colorado", bounds: COLORADO },
+  earthquake: { name: "Los Angeles County", bounds: L.latLngBounds([32.75, -118.952], [34.823, -117.646]) },
+  hurricane: { name: "Miami-Dade County", bounds: L.latLngBounds([25.137, -80.874], [25.979, -80.063]) },
+  flood: { name: "Clark County", bounds: L.latLngBounds([35.002, -115.897], [36.854, -114.043]) },
+};
+
+let region = REGIONS.fire;
+
+export function currentRegion() {
+  return region;
+}
 
 export const map = L.map("map", {
   maxBounds: COLORADO,
@@ -22,14 +36,28 @@ export const map = L.map("map", {
   wheelPxPerZoomLevel: 200,
 }).setView(BOULDER, 12);
 
-// Can't zoom out past the point where Colorado fills the window. The minimum
+// Can't zoom out past the point where the region fills the window. The minimum
 // is reset first because getBoundsZoom never goes below the current minimum.
 function limitZoomOut() {
   map.setMinZoom(0);
-  map.setMinZoom(map.getBoundsZoom(COLORADO, true));
+  map.setMinZoom(map.getBoundsZoom(region.bounds, true));
 }
 limitZoomOut();
 map.on("resize", limitZoomOut);
+
+// Moves the map to a disaster's region and keeps it there. The old bounds come
+// off first, or they'd hold the map back from the new region.
+export function setRegion(disaster) {
+  region = REGIONS[disaster];
+  map.setMaxBounds(null);
+  if (disaster === "fire") {
+    map.setView(BOULDER, 12, { animate: false });
+  } else {
+    map.fitBounds(region.bounds, { animate: false });
+  }
+  map.setMaxBounds(region.bounds);
+  limitZoomOut();
+}
 
 // Data rasters (hazard, fuels, density) draw above the basemap but under
 // polygons; points draw above polygons so markers inside a perimeter stay clickable.
@@ -84,14 +112,13 @@ const basemaps = {
   satellite: L.layerGroup([
     L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom: 19, detectRetina: true, bounds: COLORADO, attribution: "Imagery &copy; Esri" }
+      { maxZoom: 19, detectRetina: true, attribution: "Imagery &copy; Esri" }
     ),
     placeLabels,
   ]),
   streets: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     detectRetina: true,
-    bounds: COLORADO,
     attribution: "&copy; OpenStreetMap contributors",
   }),
 };
@@ -111,13 +138,13 @@ export function viewSimplification() {
   return degreesPerPixel / 2;
 }
 
-// The current view, trimmed to Colorado so no layer asks for more than the state.
+// The current view, trimmed to the region so no layer asks for more than that.
 export function viewBbox() {
   const bounds = map.getBounds();
   return {
-    west: Math.max(bounds.getWest(), COLORADO.getWest()),
-    south: Math.max(bounds.getSouth(), COLORADO.getSouth()),
-    east: Math.min(bounds.getEast(), COLORADO.getEast()),
-    north: Math.min(bounds.getNorth(), COLORADO.getNorth()),
+    west: Math.max(bounds.getWest(), region.bounds.getWest()),
+    south: Math.max(bounds.getSouth(), region.bounds.getSouth()),
+    east: Math.min(bounds.getEast(), region.bounds.getEast()),
+    north: Math.min(bounds.getNorth(), region.bounds.getNorth()),
   };
 }

@@ -4,7 +4,7 @@
  *   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules
  */
 
-import { map } from "./map.js";
+import { map, setRegion } from "./map.js";
 import { setStatus } from "./util.js";
 import { fireLayers } from "./disasters/fire/index.js";
 import { earthquakeLayers } from "./disasters/earthquake/index.js";
@@ -48,6 +48,8 @@ function hideLayer(entry) {
 }
 
 const disasterPicker = document.getElementById("disaster");
+// Registered before the layers below so they load for the new region.
+disasterPicker.addEventListener("change", () => setRegion(disasterPicker.value));
 
 // A layer is drawn only while its box is checked and its disaster is picked,
 // so switching disasters starts from a clean map.

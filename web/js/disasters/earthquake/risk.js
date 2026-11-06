@@ -4,7 +4,7 @@
  *   https://developers.arcgis.com/rest/services-reference/enterprise/query-feature-service-layer/
  */
 
-import { map } from "../../map.js";
+import { REGIONS, map } from "../../map.js";
 import { fetchJson, setStatus, showDetails } from "../../util.js";
 
 // Empty until we have the data.
@@ -55,8 +55,12 @@ const layer = L.geoJSON(null, {
 async function load() {
   setStatus("earthquake-risk", "loading…");
   const params = new URLSearchParams({
-    // The map stops at Colorado, and the full layer is past the 2000-record cap anyway.
-    where: "STATEABBRV = 'CO'",
+    // The county and its neighbors; the full layer is past the 2000-record cap anyway.
+    where: "1=1",
+    geometry: REGIONS.earthquake.bounds.toBBoxString(),
+    geometryType: "esriGeometryEnvelope",
+    inSR: "4326",
+    spatialRel: "esriSpatialRelIntersects",
     outFields: `COUNTY,STATEABBRV,${RATING_FIELD}`,
     maxAllowableOffset: "0.001",
     geometryPrecision: "3",

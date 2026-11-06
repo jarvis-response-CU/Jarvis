@@ -1,4 +1,4 @@
-import { COLORADO } from "../../map.js";
+import { REGIONS } from "../../map.js";
 import { ImageServerTiles } from "../fire/rasters.js";
 
 // Both empty until we have the data.
@@ -9,7 +9,7 @@ function imageLayer(serviceUrl, options) {
   return new ImageServerTiles("", {
     pane: "rasters",
     tileSize: 512,
-    bounds: COLORADO,
+    bounds: REGIONS.earthquake.bounds,
     updateWhenZooming: false,
     serviceUrl,
     ...options,
