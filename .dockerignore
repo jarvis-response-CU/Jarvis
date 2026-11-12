@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+.venv
+.playwright-mcp
+Web-Data-Science-Book
+docs
+tests
+data/raw
+data/inbox
+data/library
+**/__pycache__

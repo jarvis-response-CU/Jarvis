@@ -20,6 +20,8 @@ class Settings:
     log_level: str
     host: str
     port: int
+    supabase_url: str
+    supabase_anon_key: str
 
     @property
     def raw_dir(self) -> Path:
@@ -54,4 +56,6 @@ def load_settings() -> Settings:
         log_level=log_level,
         host=os.getenv("JARVIS_HOST", "127.0.0.1"),
         port=port,
+        supabase_url=os.getenv("JARVIS_SUPABASE_URL", "").rstrip("/"),
+        supabase_anon_key=os.getenv("JARVIS_SUPABASE_ANON_KEY", ""),
     )

@@ -71,6 +71,7 @@ def test_ignition_point_is_inside_the_bounds_and_burns_first():
 def test_endpoint_runs_and_validates(monkeypatch):
     one_house = pd.DataFrame([{"lat": 40.0, "lon": -105.3, "bld_value": 100, "loss_factor": 0.5}])
     monkeypatch.setattr("jarvis.server.load_structures", lambda: one_house)
+    monkeypatch.setattr("jarvis.auth.is_signed_in", lambda token: True)
     request = {"lat": 40.0, "lng": -105.3, "hours": 1, "wind_speed_mps": 4, "wind_from_deg": 270}
     ok = client.post("/api/fire/simulate", json=request)
     assert ok.status_code == 200

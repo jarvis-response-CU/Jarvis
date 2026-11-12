@@ -22,6 +22,15 @@ response and preparedness planning.
 
 Scaffold only.
 
+## Live site
+
+<https://jarvis-boulder.fly.dev>
+
+Sign in with your school email. Everyone starts with the same temporary
+password; ask Brody for it.
+
+The first visit after a quiet spell takes a few seconds while the server wakes up.
+
 ## Run it locally
 
 One-time setup:

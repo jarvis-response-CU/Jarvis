@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jarvis · Sign in</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; display: grid; place-items: center; height: 100vh; margin: 0; }
+  form { display: grid; gap: .5rem; width: 16rem; }
+  input, button { font: inherit; padding: .4rem; }
+  .error { color: #b8442c; margin: 0; }
+</style>
+</head>
+<body>
+  <form method="post" action="/login">
+    <h1>Jarvis</h1>
+    <!--error-->
+    <input name="email" type="email" placeholder="Email" autocomplete="username" required>
+    <input name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button>
+  </form>
+</body>
+</html>
