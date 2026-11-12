@@ -20,18 +20,22 @@ from jarvis.simulations.fire.map_run import run_at_point
 WEB_DIR = PROJECT_ROOT / "web"
 ACCESS_COOKIE = "jarvis_access"
 REFRESH_COOKIE = "jarvis_refresh"
-OPEN_PATHS = {"/login", "/health"}
+VERIFIER_COOKIE = "jarvis_pkce"
+OPEN_PATHS = {"/login", "/health", "/auth/google", "/auth/callback"}
 
 app = FastAPI(title="Jarvis", version=__version__)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 
+# Fly ends HTTPS at its proxy, so the scheme the browser used comes in a header.
+def is_https(request):
+    return request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
+
+
 def set_session(response, request, access_token, refresh_token):
-    # Fly ends HTTPS at its proxy, so the scheme the browser used comes in a header.
-    is_https = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
     for name, value in [(ACCESS_COOKIE, access_token), (REFRESH_COOKIE, refresh_token)]:
         response.set_cookie(
-            name, value, max_age=30 * 24 * 3600, httponly=True, secure=is_https, samesite="lax"
+            name, value, max_age=30 * 24 * 3600, httponly=True, secure=is_https(request), samesite="lax"
         )
 
 
@@ -84,6 +88,31 @@ async def submit_login(request: Request):
         return login_page("Wrong email or password.")
     response = RedirectResponse("/", status_code=303)
     set_session(response, request, access_token, refresh_token)
+    return response
+
+
+@app.get("/auth/google", include_in_schema=False)
+def start_google(request: Request):
+    callback = f"{'https' if is_https(request) else 'http'}://{request.headers['host']}/auth/callback"
+    url, verifier = auth.google_sign_in(callback)
+    response = RedirectResponse(url, status_code=303)
+    # Only needed until Google sends the browser back, a minute or two at most.
+    response.set_cookie(
+        VERIFIER_COOKIE, verifier, max_age=600, httponly=True, secure=is_https(request), samesite="lax"
+    )
+    return response
+
+
+@app.get("/auth/callback", include_in_schema=False)
+async def finish_google(request: Request, code: str = ""):
+    verifier = request.cookies.get(VERIFIER_COOKIE, "")
+    try:
+        access_token, refresh_token = await run_in_threadpool(auth.finish_google_sign_in, code, verifier)
+    except auth.AuthError:
+        return login_page("That Google account can't sign in here. Use your CU email.")
+    response = RedirectResponse("/", status_code=303)
+    set_session(response, request, access_token, refresh_token)
+    response.delete_cookie(VERIFIER_COOKIE)
     return response
 
 

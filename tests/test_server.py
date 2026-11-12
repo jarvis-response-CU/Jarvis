@@ -68,3 +68,22 @@ def test_good_login_sets_cookies(monkeypatch):
     assert response.status_code == 303
     assert "jarvis_access=access" in response.headers.get_list("set-cookie")[0]
     client.cookies.clear()
+
+
+def test_google_start_redirects_and_keeps_verifier(monkeypatch):
+    monkeypatch.setattr(auth, "google_sign_in", lambda redirect_to: (f"https://supabase.example/authorize?to={redirect_to}", "verifier"))
+    response = client.get("/auth/google", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"].endswith("/auth/callback")
+    assert "jarvis_pkce=verifier" in response.headers["set-cookie"]
+    client.cookies.clear()
+
+
+def test_google_callback_for_outsider_shows_error(monkeypatch):
+    def reject(code, verifier):
+        raise auth.AuthError("not allowed")
+
+    monkeypatch.setattr(auth, "finish_google_sign_in", reject)
+    response = client.get("/auth/callback?code=abc")
+    assert response.status_code == 200
+    assert "Use your CU email" in response.text

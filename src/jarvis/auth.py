@@ -1,6 +1,9 @@
 # References:
 #   https://supabase.com/docs/reference/self-hosting-auth/introduction
 #   https://supabase.com/docs/guides/auth/sessions
+#   https://supabase.com/docs/guides/auth/social-login/auth-google
+#   https://supabase.com/docs/guides/auth/sessions/pkce-flow
+#   https://datatracker.ietf.org/doc/html/rfc7636
 #   https://docs.python.org/3/library/urllib.request.html
 
 """Sign-in through Supabase Auth's REST API.
@@ -11,9 +14,12 @@ for a new pair with the refresh token.
 """
 
 import base64
+import hashlib
 import json
+import secrets
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from jarvis.config import load_settings
@@ -60,6 +66,64 @@ def sign_in(email, password):
     return session["access_token"], session["refresh_token"]
 
 
+def google_sign_in(redirect_to):
+    """Where to send the browser for Google, and the verifier to keep until it comes back.
+
+    PKCE: Supabase gets a hash of a random verifier now and the verifier itself
+    when the code is exchanged, so a code that leaks on the way back is useless alone.
+    """
+    verifier = secrets.token_urlsafe(48)
+    digest = hashlib.sha256(verifier.encode()).digest()
+    challenge = base64.urlsafe_b64encode(digest).decode().rstrip("=")
+    params = urllib.parse.urlencode({
+        "provider": "google",
+        "redirect_to": redirect_to,
+        "code_challenge": challenge,
+        "code_challenge_method": "s256",
+    })
+    return f"{load_settings().supabase_url}/auth/v1/authorize?{params}", verifier
+
+
+def finish_google_sign_in(auth_code, verifier):
+    """Access and refresh tokens for the code Google sent back, if the account is allowed in."""
+    if not auth_code or not verifier:
+        raise AuthError("the sign-in link is missing its code or verifier")
+    session = _call("token?grant_type=pkce", {"auth_code": auth_code, "code_verifier": verifier})
+    if not is_signed_in(session["access_token"]):
+        raise AuthError("that Google account isn't allowed in")
+    return session["access_token"], session["refresh_token"]
+
+
+def is_allowed(email, via_google=False):
+    """On the team list, or a Google-verified address at a school domain (any CU account).
+
+    The domain rule is Google-only because Google has checked the person owns
+    the address; a typed-in email would only be as safe as Supabase's confirmation setting.
+    """
+    settings = load_settings()
+    email = (email or "").lower()
+    if email in settings.allowed_emails:
+        return True
+    domain = email.rpartition("@")[2]
+    return via_google and bool(domain) and domain in settings.allowed_domains
+
+
+def has_google_verified_email(user):
+    """True when a Google identity on this account verified the account's own email.
+
+    Checked on the identity, not the account, because an account's email can be
+    changed after a Google sign-in under some other address.
+    """
+    email = (user.get("email") or "").lower()
+    for identity in user.get("identities") or []:
+        if identity.get("provider") != "google":
+            continue
+        data = identity.get("identity_data") or {}
+        if data.get("email_verified") is True and (data.get("email") or "").lower() == email:
+            return True
+    return False
+
+
 def refresh(refresh_token):
     """A new token pair, for when the access token has expired."""
     session = _call("token?grant_type=refresh_token", {"refresh_token": refresh_token})
@@ -80,12 +144,14 @@ def is_signed_in(access_token):
         _trusted_until.pop(access_token, None)
         return False
     # Anyone can make a Supabase account with the public key, so a real token
-    # isn't enough: the email has to be on the team list too.
-    # An unconfirmed address could belong to anyone, so it doesn't count.
+    # isn't enough: the email has to be confirmed and allowed in too.
     if not user.get("email_confirmed_at"):
         return False
-    email = (user.get("email") or "").lower()
-    if email not in load_settings().allowed_emails:
+    # The domain rule needs this session itself to come from a Google sign-in, not
+    # just a Google identity somewhere on the account: someone could make a password
+    # account under a student's email before the student ever signs in with Google.
+    via_google = signed_in_with_oauth(access_token) and has_google_verified_email(user)
+    if not is_allowed(user.get("email"), via_google=via_google):
         return False
     # Requests are checked on several threads at once, so another one may have
     # dropped the same stale entry already.
@@ -96,12 +162,25 @@ def is_signed_in(access_token):
     return True
 
 
-# The token's own expiry, so the cache never trusts it past that. Supabase has
-# already vouched for the token by now; this only reads the exp claim.
-def _expires_at(access_token):
+# Supabase has already vouched for the token before these run; they only read its claims.
+def _claims(access_token):
     try:
         payload = access_token.split(".")[1]
         payload += "=" * (-len(payload) % 4)
-        return json.loads(base64.urlsafe_b64decode(payload))["exp"]
-    except (IndexError, ValueError, KeyError):
-        return 0
+        return json.loads(base64.urlsafe_b64decode(payload))
+    except (IndexError, ValueError):
+        return {}
+
+
+# The token's own expiry, so the cache never trusts it past that.
+def _expires_at(access_token):
+    return _claims(access_token).get("exp", 0)
+
+
+# How the session was started, from the token's amr claim ("password", "oauth", ...).
+def signed_in_with_oauth(access_token):
+    methods = _claims(access_token).get("amr") or []
+    for entry in methods:
+        if isinstance(entry, dict) and entry.get("method") == "oauth":
+            return True
+    return False

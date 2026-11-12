@@ -23,6 +23,7 @@ class Settings:
     supabase_url: str
     supabase_anon_key: str
     allowed_emails: frozenset
+    allowed_domains: frozenset
 
     @property
     def raw_dir(self) -> Path:
@@ -57,6 +58,11 @@ def load_settings() -> Settings:
         if email.strip():
             allowed_emails.add(email.strip().lower())
 
+    allowed_domains = set()
+    for domain in os.getenv("JARVIS_ALLOWED_DOMAINS", "").split(","):
+        if domain.strip():
+            allowed_domains.add(domain.strip().lower().lstrip("@"))
+
     return Settings(
         data_dir=data_dir,
         log_level=log_level,
@@ -65,4 +71,5 @@ def load_settings() -> Settings:
         supabase_url=os.getenv("JARVIS_SUPABASE_URL", "").rstrip("/"),
         supabase_anon_key=os.getenv("JARVIS_SUPABASE_ANON_KEY", ""),
         allowed_emails=frozenset(allowed_emails),
+        allowed_domains=frozenset(allowed_domains),
     )
