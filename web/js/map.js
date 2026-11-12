@@ -10,14 +10,14 @@
 const BOULDER = [40.015, -105.2705];
 
 // Wildfire covers Boulder County, so its map stops at the state line. The other
-// disasters each cover one county, with bounds from the Census TIGERweb county layer.
+// disasters each cover one county (New York City's five), with bounds from the Census TIGERweb county layer.
 export const COLORADO = L.latLngBounds([36.99, -109.06], [41.0, -102.04]);
 
 export const REGIONS = {
   fire: { name: "Colorado", bounds: COLORADO },
   earthquake: { name: "Los Angeles County", bounds: L.latLngBounds([32.75, -118.952], [34.823, -117.646]) },
   hurricane: { name: "Miami-Dade County", bounds: L.latLngBounds([25.137, -80.874], [25.979, -80.063]) },
-  flood: { name: "Clark County", bounds: L.latLngBounds([35.002, -115.897], [36.854, -114.043]) },
+  flood: { name: "New York City", bounds: L.latLngBounds([40.477, -74.259], [40.918, -73.7]) },
 };
 
 let region = REGIONS.fire;
