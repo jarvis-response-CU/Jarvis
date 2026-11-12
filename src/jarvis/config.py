@@ -22,6 +22,7 @@ class Settings:
     port: int
     supabase_url: str
     supabase_anon_key: str
+    allowed_emails: frozenset
 
     @property
     def raw_dir(self) -> Path:
@@ -51,6 +52,11 @@ def load_settings() -> Settings:
     if not 1 <= port <= 65535:
         raise ValueError(f"JARVIS_PORT must be between 1 and 65535, got {port}")
 
+    allowed_emails = set()
+    for email in os.getenv("JARVIS_ALLOWED_EMAILS", "").split(","):
+        if email.strip():
+            allowed_emails.add(email.strip().lower())
+
     return Settings(
         data_dir=data_dir,
         log_level=log_level,
@@ -58,4 +64,5 @@ def load_settings() -> Settings:
         port=port,
         supabase_url=os.getenv("JARVIS_SUPABASE_URL", "").rstrip("/"),
         supabase_anon_key=os.getenv("JARVIS_SUPABASE_ANON_KEY", ""),
+        allowed_emails=frozenset(allowed_emails),
     )

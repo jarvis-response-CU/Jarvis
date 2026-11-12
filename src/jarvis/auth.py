@@ -10,6 +10,7 @@ asks Supabase whether an access token is still good and swaps an expired one
 for a new pair with the refresh token.
 """
 
+import base64
 import json
 import time
 import urllib.error
@@ -50,16 +51,20 @@ def _call(path, body=None, token=None):
 
 
 def sign_in(email, password):
-    """Access and refresh tokens for a correct email and password."""
+    """Access and refresh tokens for a correct email and password on the team list."""
     if not email or not password:
         raise AuthError("email and password are required")
     session = _call("token?grant_type=password", {"email": email, "password": password})
+    if not is_signed_in(session["access_token"]):
+        raise AuthError(f"{email} isn't on the team list")
     return session["access_token"], session["refresh_token"]
 
 
 def refresh(refresh_token):
     """A new token pair, for when the access token has expired."""
     session = _call("token?grant_type=refresh_token", {"refresh_token": refresh_token})
+    if not is_signed_in(session["access_token"]):
+        raise AuthError("refreshed user isn't on the team list")
     return session["access_token"], session["refresh_token"]
 
 
@@ -70,9 +75,33 @@ def is_signed_in(access_token):
     if _trusted_until.get(access_token, 0) > now:
         return True
     try:
-        _call("user", token=access_token)
+        user = _call("user", token=access_token)
     except AuthError:
         _trusted_until.pop(access_token, None)
         return False
-    _trusted_until[access_token] = now + TRUSTED_FOR_SECONDS
+    # Anyone can make a Supabase account with the public key, so a real token
+    # isn't enough: the email has to be on the team list too.
+    # An unconfirmed address could belong to anyone, so it doesn't count.
+    if not user.get("email_confirmed_at"):
+        return False
+    email = (user.get("email") or "").lower()
+    if email not in load_settings().allowed_emails:
+        return False
+    # Requests are checked on several threads at once, so another one may have
+    # dropped the same stale entry already.
+    for token, until in list(_trusted_until.items()):
+        if until <= now:
+            _trusted_until.pop(token, None)
+    _trusted_until[access_token] = min(now + TRUSTED_FOR_SECONDS, _expires_at(access_token))
     return True
+
+
+# The token's own expiry, so the cache never trusts it past that. Supabase has
+# already vouched for the token by now; this only reads the exp claim.
+def _expires_at(access_token):
+    try:
+        payload = access_token.split(".")[1]
+        payload += "=" * (-len(payload) % 4)
+        return json.loads(base64.urlsafe_b64decode(payload))["exp"]
+    except (IndexError, ValueError, KeyError):
+        return 0
