@@ -51,8 +51,18 @@ export default function HazardDropdown({ selected, onChange }: HazardDropdownPro
                 type="button"
                 className={h.value === selected ? "dropdown-item active" : "dropdown-item"}
                 disabled={!h.available}
-                onClick={() => {
+                                onClick={() => {
                   onChange(h.value);
                   setOpen(false);
                 }}
-              ></button>
+              >
+                {h.label}
+                {!h.available && <span className="soon">Coming soon</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
