@@ -2,14 +2,15 @@ import "leaflet/dist/leaflet.css";
 import "./App.css";
 import { useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Polygon } from "react-leaflet";
-import { mockSimulate } from "./mockSimulate";
-import type { SimParams, WeatherEvent, DroughtLevel, Hazard, LatLng, SimResult } from "./types";
+import { simulateFire } from "./api/simulateFire";
+import type { SimParams, WeatherEvent, DroughtLevel, Hazard, LatLng, FireRunResult  } from "./types";
 import MapClickHandler from "./components/MapClickHandler";
 import ParameterSlider from "./components/ParameterSlider";
 import ButtonGroup from "./components/ButtonGroup";
 import HazardDropdown from "./components/HazardDropdown";
 import WindDirection from "./components/WindDirection";
 import ResultsPanel from "./components/ResultsPanel";
+
 
 const weatherOptions: { value: WeatherEvent; label: string }[] = [
   { value: "clear", label: "Clear" },
@@ -36,9 +37,9 @@ const zoneColors: Record<number, string> = {
 };
 
 export default function App() {
+  const [result, setResult] = useState<FireRunResult | null>(null);
   const [visibleHours, setVisibleHours] = useState(1);
   const [mode, setMode] = useState<Mode>("setup");
-  const [result, setResult] = useState<SimResult | null>(null);
   const [ignition, setIgnition] = useState<LatLng | null>(null);
   const [hazard, setHazard] = useState<Hazard | null>(null);
   const [params, setParams] = useState<SimParams>({
@@ -48,6 +49,7 @@ export default function App() {
     windDirectionDeg: 45,
     weather: "clear",
     drought: "D2",
+    durationHours: 3,
   });
 
   function update<K extends keyof SimParams>(key: K, value: SimParams[K]) {
@@ -57,7 +59,7 @@ export default function App() {
   async function runSimulation() {
     if (!hazard || !ignition) return;
     setMode("running");
-    const r = await mockSimulate({ hazard, ignition, params });
+    const r = await simulateFire({ hazard, ignition, params });
     setResult(r);
     setVisibleHours(1);
     setMode("results");
