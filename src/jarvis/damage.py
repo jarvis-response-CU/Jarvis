@@ -42,6 +42,8 @@ WALL_GROUPS = {
     "Vinyl": "vinyl_metal",
     "Metal": "vinyl_metal",
 }
+# public NSI building types are too coarse for more than wood and masonry
+NSI_BUILDING_GROUPS = {"W": "wood", "M": "masonry"}
 ROOF_GROUPS = {
     "Asphalt": "asphalt",
     "Shake": "wood_shake",
@@ -136,6 +138,15 @@ def loss_factors(walls, roofs, factors):
         else:
             result.append(factors[(ANY, ANY)])
     return np.array(result)
+
+
+def nsi_loss_factors(building_types, factors):
+    """Loss factor for each NSI building type; anything but wood or masonry gets the overall row."""
+    result = []
+    for building_type in building_types:
+        group = NSI_BUILDING_GROUPS.get(str(building_type).strip().upper())
+        result.append(factors.get((group, ANY), factors[(ANY, ANY)]))
+    return np.array(result, dtype=float)
 
 
 def main():

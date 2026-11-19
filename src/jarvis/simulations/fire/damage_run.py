@@ -15,10 +15,15 @@ import numpy as np
 import pandas as pd
 
 from jarvis.config import load_settings
-from jarvis.damage import loss_factors, read_loss_factors
+from jarvis.damage import loss_factors, nsi_loss_factors, read_loss_factors
+from jarvis.simulations.common.exposure import exposure_summary, structures_on_grid
+from jarvis.simulations.common.nsi import INVENTORY_ID, NsiUnavailable, load_nsi
 from jarvis.structures import build
 
 COLUMNS = ["lat", "lon", "bld_value", "wall", "roof"]
+# configured extent of the local boulder county files
+BOULDER_COVERAGE = {"south": 39.913, "west": -105.693, "north": 40.263, "east": -105.052}
+LOCAL_INVENTORY_ID = "nsi_2026+boulder_local"
 
 
 @lru_cache
@@ -42,25 +47,25 @@ def load_structures() -> pd.DataFrame:
     return table
 
 
+def reached_structures(result: dict, structures: pd.DataFrame, ignition_minute) -> pd.DataFrame:
+    on_grid = structures_on_grid(result, structures)
+    on_grid["minute"] = ignition_minute[on_grid["row"].to_numpy(), on_grid["col"].to_numpy()]
+    return on_grid[on_grid["minute"].notna()].copy()
+
+
 def estimate_damage(result: dict, structures: pd.DataFrame) -> dict:
     """Properties reached, their value and their expected loss, in total and by minute.
 
     `result` is what run_at_point returns. The by-minute lists run from minute
     0 to the end of the run, cumulative, so the map's time slider can index them.
     """
-    bounds = result["bounds"]
     rows, cols = result["rows"], result["cols"]
 
     ignition_minute = np.full((rows, cols), np.nan)
     cells = np.array(result["cells"]).reshape(-1, 3)
     ignition_minute[cells[:, 0], cells[:, 1]] = cells[:, 2]
 
-    row = np.floor((structures["lat"] - bounds["south"]) / (bounds["north"] - bounds["south"]) * rows)
-    col = np.floor((structures["lon"] - bounds["west"]) / (bounds["east"] - bounds["west"]) * cols)
-    is_on_grid = (row >= 0) & (row < rows) & (col >= 0) & (col < cols)
-    reached = structures[is_on_grid].copy()
-    reached["minute"] = ignition_minute[row[is_on_grid].astype(int), col[is_on_grid].astype(int)]
-    reached = reached[reached["minute"].notna()]
+    reached = reached_structures(result, structures, ignition_minute)
     reached["expected_loss"] = reached["bld_value"] * reached["loss_factor"]
 
     last_minute = result["duration_min"]
@@ -82,3 +87,66 @@ def estimate_damage(result: dict, structures: pd.DataFrame) -> dict:
             "expected_loss": expected_loss.round().astype(int).tolist(),
         },
     }
+
+
+def estimate_exposure(result: dict, structures: pd.DataFrame, inventory: str) -> dict:
+    ignition_minute = np.full((result["rows"], result["cols"]), np.nan)
+    cells = np.array(result["cells"]).reshape(-1, 3)
+    ignition_minute[cells[:, 0], cells[:, 1]] = cells[:, 2]
+    on_grid = structures_on_grid(result, structures)
+    reached = ~np.isnan(ignition_minute[on_grid["row"].to_numpy(), on_grid["col"].to_numpy()])
+    return exposure_summary(inventory, on_grid, reached)
+
+
+def nsi_structures(bounds: dict, factors: dict) -> pd.DataFrame:
+    table = load_nsi(bounds)
+    table["loss_factor"] = nsi_loss_factors(table["building_type"], factors)
+    return table[["lat", "lon", "bld_value", "loss_factor"]]
+
+
+def merge_inventories(nsi: pd.DataFrame, local: pd.DataFrame) -> pd.DataFrame:
+    """Local records replace NSI points inside the local coverage, so nothing is counted twice."""
+    c = BOULDER_COVERAGE
+    in_coverage = (
+        (nsi["lat"] >= c["south"]) & (nsi["lat"] <= c["north"])
+        & (nsi["lon"] >= c["west"]) & (nsi["lon"] <= c["east"])
+    )
+    columns = ["lat", "lon", "bld_value", "loss_factor"]
+    return pd.concat([nsi[~in_coverage][columns], local[columns]], ignore_index=True)
+
+
+def load_inventory(bounds: dict, enhanced: bool = False) -> tuple[pd.DataFrame | None, dict]:
+    """The structures to price for a fire in `bounds`, and metadata on how they were chosen.
+
+    NSI is the baseline everywhere. With `enhanced`, the Boulder County files replace
+    NSI inside their coverage when installed. Never raises for missing inventory.
+    """
+    meta = {
+        "mode": "baseline",
+        "inventory": INVENTORY_ID,
+        "enhanced_requested": enhanced,
+        "enhanced_available": False,
+    }
+    local = None
+    if enhanced:
+        try:
+            local = load_structures()
+            meta["enhanced_available"] = True
+        except FileNotFoundError:
+            pass
+
+    nsi = None
+    try:
+        nsi = nsi_structures(bounds, read_loss_factors())
+    except NsiUnavailable as err:
+        meta["inventory_warning"] = str(err)
+
+    if local is not None:
+        meta["mode"] = "enhanced"
+        in_view = structures_on_grid({"bounds": bounds, "rows": 1, "cols": 1}, local)
+        if len(in_view):
+            meta["inventory"] = LOCAL_INVENTORY_ID
+        if nsi is None:
+            return local, meta
+        return merge_inventories(nsi, local), meta
+    return nsi, meta

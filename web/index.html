@@ -114,17 +114,19 @@
   .scan { padding-bottom: .5rem; border-bottom: 1px solid var(--rule); }
   .sim-row { display: flex; gap: .5rem; align-items: center; }
   .sim-row select { width: auto; }
+  .sim-field { margin-bottom: .5rem; }
+  .sim-row input[type=number] { width: 4.5rem; padding: .25rem .375rem; }
   button {
     padding: .375rem .625rem;
     cursor: pointer;
   }
-  #sim-start {
+  #sim-start, #quake-sim-start, #flood-sim-start {
     background: var(--accent);
     color: #fff;
     border-color: var(--accent);
   }
-  #sim-time { width: 100%; margin: .5rem 0; }
-  #sim-status, #sim-time-label { font-size: .75rem; }
+  #sim-time, #flood-sim-time { width: 100%; margin: .5rem 0; }
+  #sim-status, #sim-time-label, #quake-sim-status, #flood-sim-status, #flood-sim-time-label { font-size: .75rem; }
   .sim-overlay { image-rendering: pixelated; }
   .beta {
     margin-left: .25rem;
@@ -198,6 +200,16 @@
     <label><input type="checkbox" data-layer="buildings"> Buildings <span class="status" data-status="buildings"></span></label>
     <label><input type="checkbox" data-layer="population"> Population <span class="status" data-status="population"></span></label>
     <h2>Simulate <span class="beta">Beta</span></h2>
+    <select id="sim-wind-source" class="sim-field" aria-label="Wind source">
+      <option value="nws" selected>Current wind (NWS)</option>
+      <option value="custom">Specify wind</option>
+    </select>
+    <div id="sim-wind-custom" hidden>
+      <div class="sim-row sim-field">
+        <input type="number" id="sim-wind-speed" min="0" max="40" step="1" value="5" aria-label="Wind speed in meters per second"> m/s from
+        <input type="number" id="sim-wind-from" min="0" max="360" step="15" value="270" aria-label="Wind from, in degrees"> °
+      </div>
+    </div>
     <div class="sim-row">
       <button id="sim-start" type="button">Start a fire</button>
       <select id="sim-hours" aria-label="Simulation length">
@@ -207,6 +219,11 @@
         <option value="12">12 hours</option>
       </select>
     </div>
+    <label>
+      <input type="checkbox" id="sim-enhanced-damage-fire">
+      Enhanced damage estimate
+      <span class="status" id="sim-enhanced-damage-fire-status"></span>
+    </label>
     <p id="sim-status"></p>
     <div id="sim-controls" hidden>
       <input id="sim-time" type="range" min="0" value="0" aria-label="Simulation time">
@@ -229,6 +246,33 @@
     <h2>Exposure</h2>
     <label><input type="checkbox" data-layer="earthquake-buildings"> Buildings <span class="status" data-status="earthquake-buildings"></span></label>
     <label><input type="checkbox" data-layer="earthquake-population"> Population <span class="status" data-status="earthquake-population"></span></label>
+    <h2>Simulate <span class="beta">Beta</span></h2>
+    <div class="sim-row sim-field">
+      <input type="number" id="quake-sim-magnitude" min="3" max="8.5" step="0.1" value="6.5" aria-label="Magnitude"> M
+      <select id="quake-sim-mechanism" aria-label="Fault mechanism">
+        <option value="unspecified" selected>Unspecified</option>
+        <option value="strike_slip">Strike-slip</option>
+        <option value="reverse">Reverse</option>
+        <option value="normal">Normal</option>
+      </select>
+    </div>
+    <div class="sim-row sim-field">
+      <input type="number" id="quake-sim-vs30" min="150" max="1500" step="10" value="760" aria-label="Shear-wave velocity in meters per second"> m/s velocity
+    </div>
+    <div class="sim-row">
+      <button id="quake-sim-start" type="button">Start an earthquake</button>
+    </div>
+    <label>
+      <input type="checkbox" id="quake-sim-enhanced-damage">
+      Enhanced damage estimate
+      <span class="status" id="quake-sim-enhanced-damage-status"></span>
+    </label>
+    <p id="quake-sim-status"></p>
+    <div id="quake-sim-controls" hidden>
+      <div class="sim-row">
+        <button id="quake-sim-clear" type="button">Clear</button>
+      </div>
+    </div>
     </section>
     <section data-disaster="hurricane">
     <h2>Situation</h2>
@@ -255,6 +299,56 @@
     <h2>Exposure</h2>
     <label><input type="checkbox" data-layer="flood-buildings"> Buildings <span class="status" data-status="flood-buildings"></span></label>
     <label><input type="checkbox" data-layer="flood-population"> Population <span class="status" data-status="flood-population"></span></label>
+    <h2>Simulate <span class="beta">Beta</span></h2>
+    <div class="sim-row sim-field">
+      <select id="flood-sim-mode" aria-label="Water source">
+        <option value="rain" selected>Rain</option>
+        <option value="point">Point</option>
+      </select>
+      <select id="flood-sim-area" aria-label="Domain width">
+        <option value="2000" selected>2 km wide</option>
+        <option value="4000">4 km wide</option>
+        <option value="8000">8 km wide</option>
+      </select>
+    </div>
+    <div id="flood-sim-rain-row">
+      <div class="sim-row sim-field">
+        <input type="number" id="flood-sim-rain" min="0" max="500" step="5" value="25" aria-label="Rainfall in millimeters per hour"> mm/h rain
+      </div>
+    </div>
+    <div id="flood-sim-inflow-row" hidden>
+      <div class="sim-row sim-field">
+        <input type="number" id="flood-sim-inflow" min="0" max="10000" step="5" value="20" aria-label="Inflow in cubic meters per second"> m³/s inflow
+      </div>
+    </div>
+    <div class="sim-row sim-field">
+      <input type="number" id="flood-sim-infiltration" min="0" max="200" step="1" value="0" aria-label="Infiltration in millimeters per hour"> mm/h infiltration
+    </div>
+    <div class="sim-row sim-field">
+      <input type="number" id="flood-sim-roughness" min="0.01" max="0.3" step="0.01" value="0.05" aria-label="Manning roughness n"> roughness n
+    </div>
+    <div class="sim-row">
+      <button id="flood-sim-start" type="button">Start a flood</button>
+      <select id="flood-sim-hours" aria-label="Simulation length">
+        <option value="1">1 hour</option>
+        <option value="3" selected>3 hours</option>
+        <option value="6">6 hours</option>
+      </select>
+    </div>
+    <label>
+      <input type="checkbox" id="flood-sim-enhanced-damage">
+      Enhanced damage estimate
+      <span class="status" id="flood-sim-enhanced-damage-status"></span>
+    </label>
+    <p id="flood-sim-status"></p>
+    <div id="flood-sim-controls" hidden>
+      <input id="flood-sim-time" type="range" min="0" value="0" aria-label="Simulation time">
+      <div class="sim-row">
+        <button id="flood-sim-play" type="button">Play</button>
+        <button id="flood-sim-clear" type="button">Clear</button>
+      </div>
+      <p id="flood-sim-time-label"></p>
+    </div>
     </section>
     <h2>Details</h2>
     <div id="details"></div>

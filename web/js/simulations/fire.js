@@ -21,6 +21,12 @@ const slider = document.getElementById("sim-time");
 const playButton = document.getElementById("sim-play");
 const clearButton = document.getElementById("sim-clear");
 const timeLabel = document.getElementById("sim-time-label");
+const windSource = document.getElementById("sim-wind-source");
+const windCustom = document.getElementById("sim-wind-custom");
+const windSpeedInput = document.getElementById("sim-wind-speed");
+const windFromInput = document.getElementById("sim-wind-from");
+const enhancedBox = document.getElementById("sim-enhanced-damage-fire");
+const enhancedStatus = document.getElementById("sim-enhanced-damage-fire-status");
 
 let run = null; // { result, overlay, canvas, wind }
 let playTimer = null;
@@ -113,6 +119,7 @@ function clear() {
   run = null;
   controls.hidden = true;
   status.textContent = "";
+  enhancedStatus.textContent = "";
 }
 
 async function lightFire(latlng) {
@@ -120,17 +127,27 @@ async function lightFire(latlng) {
   map.getContainer().style.cursor = "";
   clear();
   const thisRun = runId;
-  status.textContent = "Getting wind…";
-
+  const isCustomWind = windSource.value === "custom";
   let wind;
-  try {
-    const weather = await weatherAt(latlng.lat, latlng.lng);
-    wind = weather.wind;
-  } catch (err) {
-    console.warn("simulation wind", err);
-    wind = { speedMps: 0, fromDeg: 0, label: "unavailable, running with no wind" };
+  if (isCustomWind) {
+    const speedMps = Number(windSpeedInput.value);
+    const fromDeg = Number(windFromInput.value);
+    if (!(speedMps >= 0 && speedMps <= 40 && fromDeg >= 0 && fromDeg <= 360)) {
+      status.textContent = "Wind speed must be 0-40 m/s and direction 0-360°";
+      return;
+    }
+    wind = { speedMps, fromDeg, label: `${speedMps} m/s from ${fromDeg}° (specified)` };
+  } else {
+    status.textContent = "Getting wind…";
+    try {
+      const weather = await weatherAt(latlng.lat, latlng.lng);
+      wind = weather.wind;
+    } catch (err) {
+      console.warn("simulation wind", err);
+      wind = { speedMps: 0, fromDeg: 0, label: "unavailable, running with no wind" };
+    }
+    if (thisRun !== runId) return;
   }
-  if (thisRun !== runId) return;
 
   status.textContent = "Simulating…";
   let result;
@@ -144,6 +161,7 @@ async function lightFire(latlng) {
         hours: Number(hoursSelect.value),
         wind_speed_mps: wind.speedMps,
         wind_from_deg: wind.fromDeg,
+        enhanced_damage: enhancedBox.checked,
       }),
     });
   } catch (err) {
@@ -169,11 +187,13 @@ async function lightFire(latlng) {
   slider.value = 0;
   controls.hidden = false;
   status.textContent = "";
+  const enhancedAvailable = result.damage ? result.damage.enhanced_available : result.inventory?.enhanced_available;
+  enhancedStatus.textContent = enhancedBox.checked && !enhancedAvailable ? "no data yet" : "";
   showDetails("Simulated fire", [
     ["Ignition", `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`],
     ["Duration", formatMinutes(result.duration_min)],
-    ["Wind (NWS, held constant)", wind.label],
-    ["Model", "Beta: wind-driven cellular automaton (Ebby & Farazmand 2025); ignores fuel, terrain and humidity"],
+    [isCustomWind ? "Wind (specified, held constant)" : "Wind (NWS, held constant)", wind.label],
+    ["Model", "Wind-driven cellular automaton (Ebby & Farazmand 2025); ignores fuel, terrain and humidity"],
     ["Grid", `${result.cell_m.toFixed(0)} m cells`],
     ...damageRows(result.damage),
   ]);
@@ -183,15 +203,17 @@ async function lightFire(latlng) {
 
 function damageRows(damage) {
   if (!damage) {
-    return [["Damage", "Unavailable: the county building files aren't downloaded on this server"]];
+    return [["Inventory", "Unavailable: the NSI structure inventory could not be loaded"]];
   }
+  const isEnhanced = damage.inventory.includes("boulder_local");
+  const lossNote = isEnhanced
+    ? "Enhanced with Boulder County assessor wall/roof attributes; loss factors calibrated from the 2021 Marshall Fire, which burned in extreme wind"
+    : "NSI building type with loss factors calibrated from the 2021 Marshall Fire; screening-level estimate and likely high for calmer fires";
   return [
+    ["Inventory", isEnhanced ? "NSI 2026 + Boulder County enhancement" : "NSI 2026"],
     ["Properties reached", damage.properties.toLocaleString()],
     ["Exposed building value", formatDollars(damage.exposed_value)],
-    [
-      "Expected loss (Beta)",
-      `${formatDollars(damage.expected_loss)}. Loss factors come from the 2021 Marshall Fire, which burned in extreme wind, so this runs high for a calmer fire`,
-    ],
+    ["Expected loss (Beta)", `${formatDollars(damage.expected_loss)}. ${lossNote}`],
   ];
 }
 
@@ -207,6 +229,9 @@ startButton.addEventListener("click", () => {
   map.once("click", onLightClick);
 });
 
+windSource.addEventListener("change", () => {
+  windCustom.hidden = windSource.value !== "custom";
+});
 slider.addEventListener("input", () => {
   stop();
   drawFrame(Number(slider.value));

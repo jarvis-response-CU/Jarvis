@@ -13,6 +13,8 @@ import { floodLayers } from "./disasters/flood/index.js";
 import "./search.js";
 import "./readout.js";
 import "./simulations/fire.js";
+import "./simulations/flood.js";
+import "./simulations/earthquake.js";
 
 // Every layer has the same shape: { name, layer, load?, reloadOnMove, url? }.
 // reloadOnMove layers fetch for the current view; the rest load the first time
