@@ -36,7 +36,7 @@ body {
   margin: 0;
   height: 100vh;
   display: grid;
-  grid-template-columns: 220px 1fr 300px;
+  grid-template-columns: 240px 1fr 300px;
   background: var(--bg-deep);
   color: var(--text);
   font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
@@ -94,10 +94,10 @@ p { color: var(--text-muted); margin: .5rem 0; }
 }
 
 /* ---------- Checkboxes and radios (layer toggles, basemap) ---------- */
+/* Block, not flex, so the grey status text wraps under long names in the
+   narrow left panel instead of squeezing into its own column. */
 label {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
+  display: block;
   padding: .25rem .375rem;
   margin: 0 -.375rem;
   border-radius: 4px;
@@ -109,6 +109,11 @@ input[type=checkbox],
 input[type=radio],
 input[type=range] {
   accent-color: var(--accent);
+}
+label > input[type=checkbox],
+label > input[type=radio] {
+  margin: 0 .5rem 0 0;
+  vertical-align: -2px;
 }
 
 /* ---------- Inputs ---------- */
@@ -176,10 +181,9 @@ button:hover { background: var(--surface-hover); }
 }
 
 /* ---------- Simulate sections ---------- */
+/* "Local scan" sits between the basemap choice and the layer groups. */
 .scan {
-  padding-bottom: .5rem;
-  margin-bottom: .25rem;
-  border-bottom: 1px solid var(--border);
+  margin-top: .75rem;
 }
 
 .sim-row { display: flex; gap: .5rem; align-items: center; }
@@ -336,7 +340,6 @@ button:hover { background: var(--surface-hover); }
   display: block;
   margin: 6px auto 0;
   cursor: pointer;
-  touch-action: none;   /* dragging on a touchscreen turns the dial, not the page */
 }
 .compass svg:focus-visible { outline: 2px solid var(--accent); border-radius: 50%; }
 .compass-face { fill: var(--surface); stroke: var(--border); }
