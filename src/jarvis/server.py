@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from jarvis import __version__, auth
+from jarvis import __version__, auth, hurricane
 from jarvis.config import PROJECT_ROOT, load_settings
 from jarvis.simulations.fire.damage_run import estimate_damage, load_structures
 from jarvis.simulations.fire.map_run import run_at_point
@@ -143,6 +143,11 @@ def simulate_fire(run: FireRun) -> dict:
         # The raw county files aren't downloaded; the spread still works without damage.
         result["damage"] = None
     return result
+
+
+@app.get("/api/hurricane/tracks")
+def hurricane_tracks() -> dict:
+    return hurricane.storm_tracks()
 
 
 def run() -> None:

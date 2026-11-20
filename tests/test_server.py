@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from jarvis import auth
+from jarvis import auth, hurricane
 from jarvis.server import app
 
 client = TestClient(app)
@@ -44,6 +44,14 @@ def test_signed_out_api_is_401(monkeypatch):
     monkeypatch.setattr(auth, "is_signed_in", lambda token: False)
     response = client.post("/api/fire/simulate", json={})
     assert response.status_code == 401
+
+
+def test_hurricane_tracks_come_from_the_database_reader(signed_in, monkeypatch):
+    collection = {"type": "FeatureCollection", "features": []}
+    monkeypatch.setattr(hurricane, "storm_tracks", lambda: collection)
+    response = client.get("/api/hurricane/tracks")
+    assert response.status_code == 200
+    assert response.json() == collection
 
 
 def test_login_page_is_open():

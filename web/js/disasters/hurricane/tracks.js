@@ -1,121 +1,71 @@
 /*
  * References:
- *   https://developers.arcgis.com/rest/services-reference/enterprise/query-feature-service-layer/
  *   https://leafletjs.com/examples/geojson/
+ *   https://www.nhc.noaa.gov/aboutsshws.php
  */
 
-import { REGIONS, viewBbox, viewSimplification } from "../../map.js";
-import { fetchJson, formatDate, isLocalScan, setStatus, showDetails } from "../../util.js";
+import { fetchJson, setStatus, showDetails } from "../../util.js";
 
-// Empty until we have the data.
-const TRACKS_URL = "";
-const FIELDS = ["name", "category", "wind_mph", "pressure_mb", "updated"].join(",");
-const REGION = REGIONS.hurricane;
-// Same simplification fire perimeters use for the statewide download.
-const REGION_SIMPLIFICATION = 0.001;
+// Historical storms that passed near Miami, read by the server from the team's data.
+const TRACKS_URL = "/api/hurricane/tracks";
+const MPH_PER_KNOT = 1.15078;
+// Lowest sustained wind, in knots, for Saffir-Simpson categories 1 through 5.
+const CATEGORY_MIN_KNOTS = [64, 83, 96, 113, 137];
 
-// Saffir-Simpson category, 0 below hurricane strength; 3 and up is a major hurricane.
-function categoryColor(category) {
-  if (category == null) return "#9ca3af";
-  if (category >= 3) return "#991b1b";
-  if (category >= 1) return "#ea580c";
+// 0 below hurricane strength.
+function category(windKnots) {
+  if (windKnots == null) return null;
+  return CATEGORY_MIN_KNOTS.filter((min) => windKnots >= min).length;
+}
+
+// 3 and up is a major hurricane.
+function categoryColor(level) {
+  if (level == null) return "#9ca3af";
+  if (level >= 3) return "#991b1b";
+  if (level >= 1) return "#ea580c";
   return "#facc15";
 }
 
 function showTrack(p) {
-  let category = "Unknown";
-  if (p.category > 0) {
-    category = `Category ${p.category}`;
-  } else if (p.category === 0) {
-    category = "Below hurricane strength";
+  const level = category(p.max_wind_kt);
+  let peak = "Unknown";
+  if (level > 0) {
+    peak = `Category ${level}`;
+  } else if (level === 0) {
+    peak = "Below hurricane strength";
   }
 
   let wind = null;
-  if (p.wind_mph != null) {
-    wind = `${p.wind_mph} mph`;
-  }
-
-  let pressure = null;
-  if (p.pressure_mb != null) {
-    pressure = `${p.pressure_mb} mb`;
+  if (p.max_wind_kt != null) {
+    wind = `${Math.round(p.max_wind_kt * MPH_PER_KNOT)} mph`;
   }
 
   showDetails(p.name || "Storm", [
-    ["Category", category],
-    ["Max wind", wind],
-    ["Pressure", pressure],
-    ["Updated", formatDate(p.updated)],
+    ["Season", p.season],
+    ["Peak strength", peak],
+    ["Peak wind", wind],
   ]);
 }
 
 const layer = L.geoJSON(null, {
   style: (f) => ({
-    color: categoryColor(f.properties.category),
+    color: categoryColor(category(f.properties.max_wind_kt)),
     weight: 2,
-    fillOpacity: 0.2,
+    opacity: 0.8,
   }),
   onEachFeature: (f, l) => l.on("click", () => showTrack(f.properties)),
 });
 
-function queryUrl(extra) {
-  const params = new URLSearchParams({
-    where: "1=1",
-    outFields: FIELDS,
-    geometryPrecision: "5",
-    f: "geojson",
-  });
-  for (const [key, value] of Object.entries(extra)) {
-    params.set(key, value);
-  }
-  return `${TRACKS_URL}?${params}`;
-}
-
-// Region-wide mode downloads the whole county once and pans for free after that;
-// local mode asks for just the view, at detail matched to the zoom level.
-function envelope(bbox) {
-  return {
-    geometry: bbox,
-    geometryType: "esriGeometryEnvelope",
-    inSR: "4326",
-    spatialRel: "esriSpatialRelIntersects",
-  };
-}
-
-let hasStateData = false;
-
 async function load() {
-  const local = isLocalScan();
-  // Hiding the layer cleared its status, so showing it again puts the count back.
-  if (!local && hasStateData) {
-    setStatus("hurricane-tracks", `${layer.getLayers().length} in ${REGION.name}`);
-    return;
-  }
-
-  let url;
-  if (local) {
-    const { west, south, east, north } = viewBbox();
-    url = queryUrl({
-      ...envelope(`${west},${south},${east},${north}`),
-      maxAllowableOffset: String(viewSimplification()),
-    });
-  } else {
-    url = queryUrl({
-      ...envelope(REGION.bounds.toBBoxString()),
-      maxAllowableOffset: String(REGION_SIMPLIFICATION),
-    });
-  }
-
   setStatus("hurricane-tracks", "loading…");
   try {
-    const data = await fetchJson(url);
+    const data = await fetchJson(TRACKS_URL);
     layer.clearLayers().addData(data);
-    hasStateData = !local;
-    const scope = local ? "in view" : `in ${REGION.name}`;
-    setStatus("hurricane-tracks", `${data.features.length} ${scope}`);
+    setStatus("hurricane-tracks", `${data.features.length} storms since 1950`);
   } catch (err) {
     setStatus("hurricane-tracks", "unavailable");
     console.error("hurricane-tracks", err);
   }
 }
 
-export const tracks = { name: "hurricane-tracks", layer, load, reloadOnMove: true, url: TRACKS_URL };
+export const tracks = { name: "hurricane-tracks", layer, load, url: TRACKS_URL };
