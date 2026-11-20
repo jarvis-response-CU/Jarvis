@@ -16,6 +16,8 @@ COPY web ./web
 # the raw county downloads they're made from.
 COPY data/loss_factors.csv ./data/loss_factors.csv
 COPY data/processed/structures.csv ./data/processed/structures.csv
+# The flood model never downloads elevation; fetch_dem.py makes this file.
+COPY data/raw/flood/nyc/dem.tif ./data/raw/flood/nyc/dem.tif
 
 ENV JARVIS_HOST=0.0.0.0 JARVIS_PORT=8080
 EXPOSE 8080

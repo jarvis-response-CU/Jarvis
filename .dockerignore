@@ -7,6 +7,7 @@ Web-Data-Science-Book
 docs
 tests
 data/raw
+!data/raw/flood/nyc/dem.tif
 data/inbox
 data/library
 **/__pycache__
