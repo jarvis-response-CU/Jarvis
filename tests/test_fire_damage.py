@@ -4,6 +4,7 @@
 import pandas as pd
 import pytest
 
+from jarvis.simulations.fire import damage_run
 from jarvis.simulations.fire.damage_run import estimate_damage, load_structures
 
 # A 3 x 3 grid of 0.001-degree cells. Row 0 is the south edge.
@@ -40,6 +41,7 @@ def test_only_properties_in_burned_cells_count_and_they_count_from_ignition():
 
 def test_missing_county_files_raise_file_not_found(tmp_path, monkeypatch):
     monkeypatch.setenv("JARVIS_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("JARVIS_DATABASE_URL", raising=False)
     load_structures.cache_clear()
     with pytest.raises(FileNotFoundError):
         load_structures()
@@ -48,6 +50,7 @@ def test_missing_county_files_raise_file_not_found(tmp_path, monkeypatch):
 
 def test_saved_table_is_used_and_given_loss_factors(tmp_path, monkeypatch):
     monkeypatch.setenv("JARVIS_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("JARVIS_DATABASE_URL", raising=False)
     (tmp_path / "processed").mkdir()
     pd.DataFrame({
         "lat": [40.0], "lon": [-105.0], "bld_value": [100],
@@ -59,4 +62,26 @@ def test_saved_table_is_used_and_given_loss_factors(tmp_path, monkeypatch):
     finally:
         load_structures.cache_clear()
     # The tuned wood-siding factor; the blank roof falls back to siding alone.
+    assert table["loss_factor"].tolist() == [0.606]
+
+
+def test_database_is_read_when_configured(monkeypatch):
+    monkeypatch.setenv("JARVIS_DATABASE_URL", "postgresql://example")
+    queries = []
+
+    def fake_read_sql(query, engine):
+        queries.append(query)
+        return pd.DataFrame({
+            "lat": [40.0], "lon": [-105.0], "bld_value": [100],
+            "wall": ["Frame Wood/Shake"], "roof": [None],
+        })
+
+    monkeypatch.setattr(pd, "read_sql", fake_read_sql)
+    monkeypatch.setattr(damage_run, "engine", lambda: None)
+    load_structures.cache_clear()
+    try:
+        table = load_structures()
+    finally:
+        load_structures.cache_clear()
+    assert "boulder.structures" in queries[0]
     assert table["loss_factor"].tolist() == [0.606]

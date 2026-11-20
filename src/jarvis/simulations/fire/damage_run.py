@@ -9,6 +9,7 @@ loss is its building value times the loss factor for its siding and roof
 which burned in extreme wind, so they run high for a calmer fire.
 """
 
+import os
 from functools import lru_cache
 
 import numpy as np
@@ -16,6 +17,7 @@ import pandas as pd
 
 from jarvis.config import load_settings
 from jarvis.damage import loss_factors, read_loss_factors
+from jarvis.inbox import engine
 from jarvis.structures import build
 
 COLUMNS = ["lat", "lon", "bld_value", "wall", "roof"]
@@ -25,13 +27,17 @@ COLUMNS = ["lat", "lon", "bld_value", "wall", "roof"]
 def load_structures() -> pd.DataFrame:
     """Every property's location, value and loss factor.
 
-    Building the table from the raw county files takes about a minute, so the
-    first run saves it under data/processed/. Raises FileNotFoundError when
-    the raw files haven't been downloaded (python -m jarvis.wildfire).
+    Reads boulder.structures from the database when JARVIS_DATABASE_URL is
+    set. Without it, building the table from the raw county files takes about
+    a minute, so the first run saves it under data/processed/. Raises
+    FileNotFoundError when the raw files haven't been downloaded
+    (python -m jarvis.wildfire).
     """
     settings = load_settings()
     cache = settings.processed_dir / "structures.csv"
-    if cache.exists():
+    if os.getenv("JARVIS_DATABASE_URL"):
+        table = pd.read_sql(f"select {', '.join(COLUMNS)} from boulder.structures", engine())
+    elif cache.exists():
         table = pd.read_csv(cache)
     else:
         table = build(settings.raw_dir / "wildfire")[COLUMNS]

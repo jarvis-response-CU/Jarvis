@@ -15,6 +15,7 @@ Run it with:  python -m jarvis.inbox
 
 import os
 import re
+from functools import lru_cache
 
 import pandas as pd
 from sqlalchemy import MetaData, Table, create_engine, inspect, text
@@ -135,6 +136,12 @@ def database_url():
     if url.startswith("postgresql://"):
         url = "postgresql+psycopg://" + url[len("postgresql://"):]
     return url
+
+
+@lru_cache
+def engine():
+    """One connection pool per process, shared by everything that reads the database."""
+    return create_engine(database_url())
 
 
 def main():
