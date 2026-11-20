@@ -10,9 +10,12 @@ import { fireLayers } from "./disasters/fire/index.js";
 import { earthquakeLayers } from "./disasters/earthquake/index.js";
 import { hurricaneLayers } from "./disasters/hurricane/index.js";
 import { floodLayers } from "./disasters/flood/index.js";
+import "./ui.js";
 import "./search.js";
 import "./readout.js";
 import "./simulations/fire.js";
+import "./simulations/flood.js";
+import "./simulations/earthquake.js";
 
 // Every layer has the same shape: { name, layer, load?, reloadOnMove, url? }.
 // reloadOnMove layers fetch for the current view; the rest load the first time

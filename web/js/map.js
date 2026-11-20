@@ -17,7 +17,7 @@ export const REGIONS = {
   fire: { name: "Colorado", bounds: COLORADO },
   earthquake: { name: "Los Angeles County", bounds: L.latLngBounds([32.75, -118.952], [34.823, -117.646]) },
   hurricane: { name: "Miami-Dade County", bounds: L.latLngBounds([25.137, -80.874], [25.979, -80.063]) },
-  flood: { name: "New York City", bounds: L.latLngBounds([40.477, -74.259], [40.918, -73.7]) },
+  flood: { name: "New York City", bounds: L.latLngBounds([40.4774, -74.2591], [40.9176, -73.7004]) },
 };
 
 let region = REGIONS.fire;

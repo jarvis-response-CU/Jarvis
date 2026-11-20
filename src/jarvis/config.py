@@ -24,6 +24,7 @@ class Settings:
     supabase_anon_key: str
     allowed_emails: frozenset
     allowed_domains: frozenset
+    nsi_api_root: str = "https://nsi.sec.usace.army.mil/nsiapi/"
 
     @property
     def raw_dir(self) -> Path:
@@ -72,4 +73,5 @@ def load_settings() -> Settings:
         supabase_anon_key=os.getenv("JARVIS_SUPABASE_ANON_KEY", ""),
         allowed_emails=frozenset(allowed_emails),
         allowed_domains=frozenset(allowed_domains),
+        nsi_api_root=os.getenv("JARVIS_NSI_API_ROOT", "https://nsi.sec.usace.army.mil/nsiapi/"),
     )
