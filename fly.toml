@@ -19,6 +19,8 @@ primary_region = "dfw"
     timeout = "5s"
     grace_period = "10s"
 
+# An earthquake run holds every NSI building in its footprint in memory;
+# 1 GB ran out on a magnitude 5 in Los Angeles.
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "1gb"
+  size = "shared-cpu-2x"
+  memory = "4gb"
