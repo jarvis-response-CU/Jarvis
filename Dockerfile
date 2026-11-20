@@ -6,6 +6,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# rasterio's wheel bundles GDAL but links against the system's libexpat.
+RUN apt-get update && apt-get install -y --no-install-recommends libexpat1 && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml ./
 COPY src ./src
 # Editable, so PROJECT_ROOT (found from the source files' location) is /app.
