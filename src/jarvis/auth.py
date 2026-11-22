@@ -54,6 +54,9 @@ def _call(path, body=None, token=None):
         raise AuthError(f"Supabase answered {err.code} for {path}") from None
     except urllib.error.URLError as err:
         raise AuthError(f"couldn't reach Supabase: {err.reason}") from None
+    # A timeout while reading the reply isn't wrapped in URLError.
+    except TimeoutError:
+        raise AuthError(f"Supabase didn't answer {path} in time") from None
 
 
 def sign_in(email, password):

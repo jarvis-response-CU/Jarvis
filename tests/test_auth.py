@@ -129,3 +129,15 @@ def test_password_session_on_google_linked_cu_account_is_rejected(monkeypatch):
     monkeypatch.setattr(auth, "_call", lambda path, body=None, token=None: user)
     assert not auth.is_signed_in(token_with_amr("password"))
     assert auth.is_signed_in(token_with_amr("oauth"))
+
+
+def test_slow_supabase_is_an_auth_error(monkeypatch):
+    monkeypatch.setenv("JARVIS_SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("JARVIS_SUPABASE_ANON_KEY", "anon")
+
+    def time_out(request, timeout):
+        raise TimeoutError("The read operation timed out")
+
+    monkeypatch.setattr(auth.urllib.request, "urlopen", time_out)
+    with pytest.raises(auth.AuthError):
+        auth._call("user", token="token")
