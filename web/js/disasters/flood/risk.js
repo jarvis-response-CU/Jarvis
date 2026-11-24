@@ -7,8 +7,7 @@
 import { REGIONS, map } from "../../map.js";
 import { fetchJson, setStatus, showDetails } from "../../util.js";
 
-// Empty until we have the data.
-const RISK_URL = "";
+const RISK_URL = "https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Counties/FeatureServer/0/query";
 // The National Risk Index field with each county's inland flood rating.
 const RATING_FIELD = "IFLD_RISKR";
 

@@ -7,29 +7,30 @@
 import { map, viewBbox } from "../../map.js";
 import { fetchJson, formatDate, setStatus, showDetails } from "../../util.js";
 
-// Empty until we have the data.
-const GAUGES_URL = "";
+// USGS and NWS gauges, as Esri's live feed (refreshed about every 15 minutes).
+const GAUGES_URL =
+  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/Live_Stream_Gauges_v1/FeatureServer/0/query";
 const MIN_ZOOM = 9;
+// NWS flood categories the feed reports in "status".
+const FLOODING = ["Minor Flood", "Moderate Flood", "Major Flood"];
 
 function showGauge(properties, latlng) {
   let height = null;
-  if (properties.height_ft != null) {
-    height = `${properties.height_ft} ft`;
+  if (properties.stage_ft != null) {
+    height = `${properties.stage_ft} ft`;
   }
 
   showDetails(properties.name || "Stream gauge", [
     ["Water level", height],
-    ["Flood stage", properties.flood_stage_ft != null ? `${properties.flood_stage_ft} ft` : null],
-    ["Reading", formatDate(properties.time)],
+    ["Status", properties.status],
+    ["Reading", formatDate(properties.lastupdate)],
     ["Location", `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`],
   ]);
 }
 
 const layer = L.geoJSON(null, {
   pointToLayer: (feature, latlng) => {
-    const height = feature.properties.height_ft;
-    const floodStage = feature.properties.flood_stage_ft;
-    const isFlooding = height != null && floodStage != null && height >= floodStage;
+    const isFlooding = FLOODING.includes(feature.properties.status);
     return L.circleMarker(latlng, {
       pane: "points",
       radius: 5,
@@ -58,7 +59,7 @@ async function load() {
     geometryType: "esriGeometryEnvelope",
     inSR: "4326",
     spatialRel: "esriSpatialRelIntersects",
-    outFields: "name,height_ft,flood_stage_ft,time",
+    outFields: "name,stage_ft,status,lastupdate",
     resultRecordCount: "2000",
     f: "geojson",
   });

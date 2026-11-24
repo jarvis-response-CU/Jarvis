@@ -1,9 +1,9 @@
 import { REGIONS } from "../../map.js";
 import { ImageServerTiles } from "../fire/rasters.js";
 
-// Both empty until we have the data.
-const BUILDINGS_URL = "";
-const POPULATION_URL = "";
+// The same national density maps the wildfire layers use.
+const BUILDINGS_URL = "https://imagery.geoplatform.gov/iipp/rest/services/Fire_Aviation/USFS_EDW_RMRS_WRC_BuildingDensity/ImageServer";
+const POPULATION_URL = "https://imagery.geoplatform.gov/iipp/rest/services/Fire_Aviation/USFS_EDW_RMRS_WRC_PopulationDensity/ImageServer";
 
 function imageLayer(serviceUrl, options) {
   return new ImageServerTiles("", {

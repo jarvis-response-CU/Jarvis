@@ -6,8 +6,8 @@
 import { map } from "../../map.js";
 import { fetchJson, isLocalScan, setStatus, showDetails } from "../../util.js";
 
-// Empty until we have the data.
-const ALERTS_URL = "";
+const ALERTS_URL =
+  "https://api.weather.gov/alerts/active?area=FL&event=Hurricane%20Warning,Hurricane%20Watch,Tropical%20Storm%20Warning,Tropical%20Storm%20Watch,Storm%20Surge%20Warning,Storm%20Surge%20Watch";
 // There are only a handful of hurricane alerts at a time, so they're fetched
 // once and local scan just filters them to the view.
 const REFRESH_MS = 10 * 60 * 1000;

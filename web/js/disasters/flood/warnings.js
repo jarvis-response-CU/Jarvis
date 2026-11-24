@@ -6,8 +6,8 @@
 import { map } from "../../map.js";
 import { fetchJson, isLocalScan, setStatus, showDetails } from "../../util.js";
 
-// Empty until we have the data.
-const ALERTS_URL = "";
+const ALERTS_URL =
+  "https://api.weather.gov/alerts/active?area=NY&event=Flood%20Warning,Flood%20Watch,Flash%20Flood%20Warning,Flash%20Flood%20Watch,Coastal%20Flood%20Warning,Coastal%20Flood%20Watch";
 // Flash floods come up fast, so the next map move refetches the list once
 // it's two minutes old; local scan just filters it to the view.
 const REFRESH_MS = 2 * 60 * 1000;

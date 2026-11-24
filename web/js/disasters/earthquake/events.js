@@ -7,8 +7,9 @@
 import { map, viewBbox } from "../../map.js";
 import { fetchJson, formatDate, setStatus, showDetails } from "../../util.js";
 
-// Empty until we have the data.
-const EVENTS_URL = "";
+// USGS's past-week earthquakes, as Esri's live feed.
+const EVENTS_URL =
+  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USGS_Seismic_Data_v1/FeatureServer/0/query";
 const MIN_ZOOM = 6;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -16,7 +17,7 @@ function showEvent(properties, latlng) {
   showDetails("Earthquake", [
     ["Magnitude", properties.mag],
     ["Place", properties.place],
-    ["Time", formatDate(properties.time)],
+    ["Time", formatDate(properties.eventTime)],
     ["Location", `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`],
   ]);
 }
@@ -24,7 +25,7 @@ function showEvent(properties, latlng) {
 const layer = L.geoJSON(null, {
   pointToLayer: (feature, latlng) => {
     const magnitude = feature.properties.mag || 0;
-    const isRecent = Date.now() - feature.properties.time < DAY_MS;
+    const isRecent = Date.now() - feature.properties.eventTime < DAY_MS;
     return L.circleMarker(latlng, {
       pane: "points",
       radius: 3 + magnitude * 2,
@@ -53,7 +54,7 @@ async function load() {
     geometryType: "esriGeometryEnvelope",
     inSR: "4326",
     spatialRel: "esriSpatialRelIntersects",
-    outFields: "mag,place,time",
+    outFields: "mag,place,eventTime",
     resultRecordCount: "2000",
     f: "geojson",
   });

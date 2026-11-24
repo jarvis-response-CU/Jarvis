@@ -7,9 +7,11 @@
 import { REGIONS, viewBbox, viewSimplification } from "../../map.js";
 import { fetchJson, formatDate, isLocalScan, setStatus, showDetails } from "../../util.js";
 
-// Empty until we have the data.
-const SHAKING_URL = "";
-const FIELDS = ["name", "mmi", "updated"].join(",");
+// USGS ShakeMap intensity areas for the past week's quakes, as Esri's live feed.
+// grid_value is the area's highest Modified Mercalli intensity.
+const SHAKING_URL =
+  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USGS_Seismic_Data_v1/FeatureServer/1/query";
+const FIELDS = ["mag", "grid_value", "updated"].join(",");
 const REGION = REGIONS.earthquake;
 // Same simplification fire perimeters use for the statewide download.
 const REGION_SIMPLIFICATION = 0.001;
@@ -25,11 +27,11 @@ function intensityColor(mmi) {
 
 function showShaking(p) {
   let intensity = "Unknown";
-  if (p.mmi != null) {
-    intensity = `MMI ${p.mmi}`;
+  if (p.grid_value != null) {
+    intensity = `MMI ${p.grid_value}`;
   }
 
-  showDetails(p.name || "Shaking", [
+  showDetails(p.mag != null ? `M${p.mag} shaking` : "Shaking", [
     ["Intensity", intensity],
     ["Updated", formatDate(p.updated)],
   ]);
@@ -37,7 +39,7 @@ function showShaking(p) {
 
 const layer = L.geoJSON(null, {
   style: (f) => ({
-    color: intensityColor(f.properties.mmi),
+    color: intensityColor(f.properties.grid_value),
     weight: 1,
     fillOpacity: 0.3,
   }),
@@ -46,7 +48,9 @@ const layer = L.geoJSON(null, {
 
 function queryUrl(extra) {
   const params = new URLSearchParams({
-    where: "1=1",
+    // Below IV hardly anyone feels it, and every small quake's rings would
+    // otherwise stack into one green sheet over the city.
+    where: "grid_value >= 4",
     outFields: FIELDS,
     geometryPrecision: "5",
     f: "geojson",

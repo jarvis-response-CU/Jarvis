@@ -10,10 +10,11 @@ import { fetchJson, setStatus, showDetails } from "../../util.js";
 
 const MIN_ZOOM = 11;
 
-// Both urls are empty until we have the data.
+// Hospitals from USGS's national structures; shelters are FEMA's currently open
+// ones, so that layer is usually empty outside a disaster.
 const kinds = {
   hospitals: {
-    url: "",
+    url: "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/Structures_Medical_Emergency_Response_v1/FeatureServer/0/query",
     params: { where: "1=1", outFields: "NAME,ADDRESS,CITY,STATE", f: "geojson" },
     color: "#2563eb",
     describe(p) {
@@ -27,12 +28,12 @@ const kinds = {
     },
   },
   shelters: {
-    url: "",
-    params: { where: "1=1", outFields: "NAME,ADDRESS,CITY,STATE", f: "geojson" },
+    url: "https://gis.fema.gov/arcgis/rest/services/NSS/OpenShelters/FeatureServer/0/query",
+    params: { where: "1=1", outFields: "shelter_name,address,city,state", f: "geojson" },
     color: "#16a34a",
     describe(p) {
-      const title = p.NAME || "Shelter";
-      const addressParts = [p.ADDRESS, p.CITY, p.STATE].filter(Boolean);
+      const title = p.shelter_name || "Shelter";
+      const addressParts = [p.address, p.city, p.state].filter(Boolean);
       const rows = [
         ["Type", "Shelter"],
         ["Address", addressParts.join(", ")],
