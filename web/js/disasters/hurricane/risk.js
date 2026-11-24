@@ -1,16 +1,16 @@
 /*
  * References:
- *   https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Counties/FeatureServer/0
- *   https://developers.arcgis.com/rest/services-reference/enterprise/query-feature-service-layer/
+ *   https://services.arcgis.com/XG15cJAlne2vxtgt/arcgis/rest/services/National_Risk_Index_Census_Tracts/FeatureServer/0
+ *   https://www.fema.gov/api/open/v3/NfipClaims
+ *   https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/arcgis/rest/services/HurricaneEvacZone_gdb/FeatureServer/0
  */
 
-import { REGIONS, map } from "../../map.js";
+import { map } from "../../map.js";
 import { fetchJson, setStatus, showDetails } from "../../util.js";
 
-// Empty until we have the data.
-const RISK_URL = "";
-// The National Risk Index field with each county's hurricane rating.
-const RATING_FIELD = "HRCN_RISKR";
+// Census tracts with FEMA's National Risk Index hurricane rating and the
+// NFIP flood claims paid in each, read by the server from the team's data.
+const TRACTS_URL = "/api/hurricane/tracts";
 
 // National Risk Index ratings, in the colors FEMA's own layer draws them with.
 const RATING_COLORS = {
@@ -22,14 +22,16 @@ const RATING_COLORS = {
 };
 
 // Drawn under the situation layers, and faded as one pane so the border
-// two counties share isn't drawn twice as strong.
+// two tracts share isn't drawn twice as strong.
 const pane = map.createPane("hurricane-risk");
 pane.style.zIndex = 250;
 pane.style.opacity = 0.35;
 
-// "Not Applicable", "No Rating" and "Insufficient Data" counties stay clear.
+const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+// "Not Applicable", "No Rating" and "Insufficient Data" tracts stay clear.
 function ratingStyle(feature) {
-  const fillColor = RATING_COLORS[feature.properties[RATING_FIELD]];
+  const fillColor = RATING_COLORS[feature.properties.hrcn_riskr];
   if (!fillColor) {
     return { stroke: false, fillOpacity: 0 };
   }
@@ -38,9 +40,12 @@ function ratingStyle(feature) {
 
 function showRisk(p) {
   showDetails("Hurricane risk", [
-    ["County", p.COUNTY],
-    ["State", p.STATEABBRV],
-    ["Rating", p[RATING_FIELD]],
+    ["Census tract", p.tractfips],
+    ["Rating", p.hrcn_riskr],
+    ["Population", p.population?.toLocaleString()],
+    ["Expected yearly loss", p.hrcn_ealt != null ? dollars.format(p.hrcn_ealt) : null],
+    ["Flood claims", p.claim_count.toLocaleString()],
+    ["Claims paid", dollars.format(p.paid)],
   ]);
 }
 
@@ -54,26 +59,42 @@ const layer = L.geoJSON(null, {
 
 async function load() {
   setStatus("hurricane-risk", "loading…");
-  const params = new URLSearchParams({
-    // The county and its neighbors; the full layer is past the 2000-record cap anyway.
-    where: "1=1",
-    geometry: REGIONS.hurricane.bounds.toBBoxString(),
-    geometryType: "esriGeometryEnvelope",
-    inSR: "4326",
-    spatialRel: "esriSpatialRelIntersects",
-    outFields: `COUNTY,STATEABBRV,${RATING_FIELD}`,
-    maxAllowableOffset: "0.001",
-    geometryPrecision: "3",
-    f: "geojson",
-  });
   try {
-    const data = await fetchJson(`${RISK_URL}?${params}`);
+    const data = await fetchJson(TRACTS_URL);
     layer.clearLayers().addData(data);
-    setStatus("hurricane-risk", `${data.features.length} counties`);
+    setStatus("hurricane-risk", `${data.features.length} tracts`);
   } catch (err) {
     setStatus("hurricane-risk", "unavailable");
     console.error("hurricane-risk", err);
   }
 }
 
-export const risk = { name: "hurricane-risk", layer, load, reloadOnMove: false, url: RISK_URL };
+export const risk = { name: "hurricane-risk", layer, load, reloadOnMove: false, url: TRACTS_URL };
+
+// Miami-Dade's storm surge planning zones: A can flood from a Category 1, E only from a Category 5.
+const SURGE_URL = "/api/hurricane/surge_zones";
+const SURGE_COLORS = { A: "#7f1d1d", B: "#b91c1c", C: "#ea580c", D: "#f59e0b", E: "#fde047" };
+
+const surgeLayer = L.geoJSON(null, {
+  pane: "hurricane-risk",
+  style: (f) => ({ stroke: false, fillColor: SURGE_COLORS[f.properties.surge_zone], fillOpacity: 1 }),
+  onEachFeature: (feature, featureLayer) => {
+    featureLayer.on("click", () => {
+      showDetails("Storm surge zone", [["Zone", feature.properties.surge_zone]]);
+    });
+  },
+});
+
+async function loadSurge() {
+  setStatus("hurricane-surge", "loading…");
+  try {
+    const data = await fetchJson(SURGE_URL);
+    surgeLayer.clearLayers().addData(data);
+    setStatus("hurricane-surge", "zones A–E");
+  } catch (err) {
+    setStatus("hurricane-surge", "unavailable");
+    console.error("hurricane-surge", err);
+  }
+}
+
+export const surge = { name: "hurricane-surge", layer: surgeLayer, load: loadSurge, reloadOnMove: false, url: SURGE_URL };

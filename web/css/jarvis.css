@@ -60,13 +60,6 @@ h1 {
   letter-spacing: -.02em;
 }
 
-.tag {
-  font-size: .6875rem;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
 /* Section headings: Situation, Resources, Risk, Simulate... */
 h2 {
   font-size: .6875rem;

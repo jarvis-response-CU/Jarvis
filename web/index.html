@@ -16,7 +16,6 @@
 </head>
 <body>
   <aside class="left">
-    <div class="tag">Running locally</div>
     <h1>Jarvis</h1>
     <h2>Basemap</h2>
     <label><input type="radio" name="basemap" value="satellite" checked> Satellite</label>
@@ -54,12 +53,15 @@
     <section data-disaster="hurricane">
     <h2>Situation</h2>
     <label><input type="checkbox" data-layer="hurricane-tracks" checked> Storm tracks <span class="status" data-status="hurricane-tracks"></span></label>
+    <label><input type="checkbox" data-layer="hurricane-windswaths"> Wind swaths <span class="status" data-status="hurricane-windswaths"></span></label>
     <label><input type="checkbox" data-layer="hurricane-warnings" checked> Hurricane warnings <span class="status" data-status="hurricane-warnings"></span></label>
     <h2>Resources</h2>
+    <label><input type="checkbox" data-layer="hurricane-fire-stations"> Fire stations <span class="status" data-status="hurricane-fire-stations"></span></label>
     <label><input type="checkbox" data-layer="hurricane-hospitals"> Hospitals <span class="status" data-status="hurricane-hospitals"></span></label>
     <label><input type="checkbox" data-layer="hurricane-shelters"> Shelters <span class="status" data-status="hurricane-shelters"></span></label>
     <h2>Risk</h2>
-    <label><input type="checkbox" data-layer="hurricane-risk"> Hurricane risk <span class="status" data-status="hurricane-risk"></span></label>
+    <label><input type="checkbox" data-layer="hurricane-risk"> Hurricane risk and flood claims <span class="status" data-status="hurricane-risk"></span></label>
+    <label><input type="checkbox" data-layer="hurricane-surge"> Storm surge zones <span class="status" data-status="hurricane-surge"></span></label>
     <h2>Exposure</h2>
     <label><input type="checkbox" data-layer="hurricane-buildings"> Buildings <span class="status" data-status="hurricane-buildings"></span></label>
     <label><input type="checkbox" data-layer="hurricane-population"> Population <span class="status" data-status="hurricane-population"></span></label>

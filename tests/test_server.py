@@ -46,12 +46,17 @@ def test_signed_out_api_is_401(monkeypatch):
     assert response.status_code == 401
 
 
-def test_hurricane_tracks_come_from_the_database_reader(signed_in, monkeypatch):
+def test_hurricane_layers_come_from_the_database_reader(signed_in, monkeypatch):
     collection = {"type": "FeatureCollection", "features": []}
-    monkeypatch.setattr(hurricane, "storm_tracks", lambda: collection)
-    response = client.get("/api/hurricane/tracks")
+    monkeypatch.setattr(hurricane, "features", lambda layer: {**collection, "layer": layer})
+    response = client.get("/api/hurricane/windswaths")
     assert response.status_code == 200
-    assert response.json() == collection
+    assert response.json() == {**collection, "layer": "windswaths"}
+
+
+def test_unknown_hurricane_layer_is_404(signed_in):
+    response = client.get("/api/hurricane/not_a_layer")
+    assert response.status_code == 404
 
 
 def test_login_page_is_open():

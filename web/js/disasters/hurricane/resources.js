@@ -2,6 +2,7 @@
  * References:
  *   https://developers.arcgis.com/rest/services-reference/enterprise/query-feature-service-layer/
  *   https://developer.mozilla.org/en-US/docs/Web/API/AbortController
+ *   https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/arcgis/rest/services/FireStation_gdb/FeatureServer/0
  */
 
 import { map, viewBbox } from "../../map.js";
@@ -105,3 +106,32 @@ function makeEntry(key) {
 
 export const hospitals = makeEntry("hospitals");
 export const shelters = makeEntry("shelters");
+
+// The team's 75 Miami-Dade fire stations, small enough to load whole, once.
+const STATIONS_URL = "/api/hurricane/fire_stations";
+const station = {
+  color: "#dc2626",
+  describe(p) {
+    const address = [p.address, p.city].filter(Boolean).join(", ");
+    return [p.name || "Fire station", [["Type", "Fire station"], ["Address", address]]];
+  },
+};
+const stationLayer = L.layerGroup();
+
+async function loadStations() {
+  setStatus("hurricane-fire-stations", "loading…");
+  try {
+    const data = await fetchJson(STATIONS_URL);
+    stationLayer.clearLayers();
+    for (const feature of data.features) {
+      const [lng, lat] = feature.geometry.coordinates;
+      stationLayer.addLayer(marker(L.latLng(lat, lng), station, feature.properties));
+    }
+    setStatus("hurricane-fire-stations", `${data.features.length} stations`);
+  } catch (err) {
+    setStatus("hurricane-fire-stations", "unavailable");
+    console.error("hurricane-fire-stations", err);
+  }
+}
+
+export const fireStations = { name: "hurricane-fire-stations", layer: stationLayer, load: loadStations, url: STATIONS_URL };

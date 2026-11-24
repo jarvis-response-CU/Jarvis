@@ -203,9 +203,12 @@ def simulate_fire(run: FireRun) -> dict:
     return result
 
 
-@app.get("/api/hurricane/tracks")
-def hurricane_tracks() -> dict:
-    return hurricane.storm_tracks()
+@app.get("/api/hurricane/{layer}")
+def hurricane_layer(layer: str) -> dict:
+    try:
+        return hurricane.features(layer)
+    except KeyError as err:
+        raise HTTPException(status_code=404, detail=str(err)) from err
 
 
 def attach_nsi_exposure(result: dict, estimate, estimate_loss=None) -> dict:
