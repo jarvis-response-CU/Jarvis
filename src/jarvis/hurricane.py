@@ -12,7 +12,12 @@ LAYERS = {
     # Widest (34 kt) first so the stronger bands draw on top.
     "windswaths": "select storm_id, wind_kt, geometry from miami.storm_windswaths order by wind_kt",
     "surge_zones": "select surge_zone, geometry from miami.surge_zones where surge_zone is not null",
-    "fire_stations": "select name, address, city, geometry from miami.fire_stations",
+    # County fire rescue stations plus the five city departments' own (Miami, Miami Beach, ...).
+    "fire_stations": """
+        select name, address, city, geometry from miami.fire_stations
+        union all
+        select name, address, city, geometry from miami.municipal_fire_stations
+    """,
     # FEMA rounds claim locations to 0.1 degrees, so claims are only placed by
     # their census tract. Claims on tracts NRI doesn't have (older boundaries) drop out.
     "tracts": """

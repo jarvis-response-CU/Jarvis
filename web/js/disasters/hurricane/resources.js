@@ -108,7 +108,7 @@ function makeEntry(key) {
 export const hospitals = makeEntry("hospitals");
 export const shelters = makeEntry("shelters");
 
-// The team's 75 Miami-Dade fire stations, small enough to load whole, once.
+// Miami-Dade's county and city fire stations, small enough to load whole, once.
 const STATIONS_URL = "/api/hurricane/fire_stations";
 const station = {
   color: "#dc2626",
