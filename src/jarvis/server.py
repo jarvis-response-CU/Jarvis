@@ -34,6 +34,16 @@ app = FastAPI(title="Jarvis", version=__version__)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 
+# With no caching header, browsers guess and keep running old JS for days after
+# a change. no-cache makes them ask first; StaticFiles answers 304 when unchanged.
+@app.middleware("http")
+async def revalidate_static_files(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 # Fly ends HTTPS at its proxy, so the scheme the browser used comes in a header.
 def is_https(request):
     return request.headers.get("x-forwarded-proto", request.url.scheme) == "https"

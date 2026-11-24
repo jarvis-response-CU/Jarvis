@@ -54,6 +54,12 @@ def test_hurricane_layers_come_from_the_database_reader(signed_in, monkeypatch):
     assert response.json() == {**collection, "layer": "windswaths"}
 
 
+def test_static_files_make_the_browser_check_for_changes(signed_in):
+    response = client.get("/static/js/main.js")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-cache"
+
+
 def test_unknown_hurricane_layer_is_404(signed_in):
     response = client.get("/api/hurricane/not_a_layer")
     assert response.status_code == 404
